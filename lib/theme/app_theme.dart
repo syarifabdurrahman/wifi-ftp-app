@@ -39,100 +39,117 @@ class AppTheme {
   static const Color surfaceContainerHighest = Color(0xFFE1E2EA);
 
   static ThemeData get lightTheme {
+    return _buildTheme(Brightness.light);
+  }
+
+  static ThemeData get darkTheme {
+    return _buildTheme(Brightness.dark);
+  }
+
+  static ThemeData _buildTheme(Brightness brightness) {
+    final bool isDark = brightness == Brightness.dark;
+    
+    final ColorScheme colorScheme = ColorScheme(
+      brightness: brightness,
+      primary: primary,
+      onPrimary: onPrimary,
+      primaryContainer: isDark ? const Color(0xFF003062) : primaryContainer,
+      onPrimaryContainer: isDark ? const Color(0xFFD6E3FF) : onPrimaryContainer,
+      secondary: isDark ? const Color(0xFFB9C8DA) : secondary,
+      onSecondary: isDark ? const Color(0xFF243240) : onSecondary,
+      secondaryContainer: isDark ? const Color(0xFF3A4858) : const Color(0xFFD0E1FB),
+      onSecondaryContainer: isDark ? const Color(0xFFD6E4F7) : onSecondaryContainer,
+      tertiary: isDark ? const Color(0xFFFFB591) : tertiary,
+      onTertiary: isDark ? const Color(0xFF551E00) : onTertiary,
+      tertiaryContainer: isDark ? const Color(0xFF793100) : tertiaryContainer,
+      onTertiaryContainer: isDark ? const Color(0xFFFFDBCA) : onTertiaryContainer,
+      error: error,
+      onError: onError,
+      errorContainer: errorContainer,
+      onErrorContainer: onErrorContainer,
+      background: isDark ? const Color(0xFF111318) : background,
+      onBackground: isDark ? const Color(0xFFE2E2E9) : onBackground,
+      surface: isDark ? const Color(0xFF111318) : surface,
+      onSurface: isDark ? const Color(0xFFE2E2E9) : onSurface,
+      onSurfaceVariant: isDark ? const Color(0xFFC2C6D4) : onSurfaceVariant,
+      surfaceVariant: isDark ? const Color(0xFF424752) : surfaceVariant,
+      outline: isDark ? const Color(0xFF8C919E) : outline,
+      outlineVariant: isDark ? const Color(0xFF424752) : outlineVariant,
+    );
+
     return ThemeData(
       useMaterial3: true,
-      colorScheme: const ColorScheme(
-        brightness: Brightness.light,
-        primary: primary,
-        onPrimary: onPrimary,
-        primaryContainer: primaryContainer,
-        onPrimaryContainer: onPrimaryContainer,
-        secondary: secondary,
-        onSecondary: onSecondary,
-        secondaryContainer: Color(0xFFD0E1FB),
-        onSecondaryContainer: onSecondaryContainer,
-        tertiary: tertiary,
-        onTertiary: onTertiary,
-        tertiaryContainer: tertiaryContainer,
-        onTertiaryContainer: onTertiaryContainer,
-        error: error,
-        onError: onError,
-        errorContainer: errorContainer,
-        onErrorContainer: onErrorContainer,
-        background: background,
-        onBackground: onBackground,
-        surface: surface,
-        onSurface: onSurface,
-        onSurfaceVariant: onSurfaceVariant,
-        surfaceVariant: surfaceVariant,
-        outline: outline,
-        outlineVariant: outlineVariant,
-      ),
-      scaffoldBackgroundColor: background,
-      textTheme: _textTheme,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: colorScheme.background,
+      textTheme: _textTheme(isDark),
       appBarTheme: AppBarTheme(
-        backgroundColor: surface,
-        foregroundColor: primary,
+        backgroundColor: Colors.transparent,
+        foregroundColor: colorScheme.primary,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: _textTheme.headlineMedium?.copyWith(
-          color: primary,
+        titleTextStyle: _textTheme(isDark).headlineMedium?.copyWith(
+          color: isDark ? colorScheme.onSurface : colorScheme.primary,
           fontWeight: FontWeight.bold,
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: surfaceContainerLowest,
-        selectedItemColor: primary,
-        unselectedItemColor: onSurfaceVariant,
-        selectedLabelStyle: _textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w500),
-        unselectedLabelStyle: _textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w500),
+        backgroundColor: isDark ? const Color(0xFF1A1C1E) : surfaceContainerLowest,
+        selectedItemColor: colorScheme.primary,
+        unselectedItemColor: colorScheme.onSurfaceVariant,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
+      ),
+      cardTheme: CardTheme(
+        color: isDark ? const Color(0xFF1E2025) : surfaceContainerLowest,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.2 : 0.5),
+          ),
+        ),
       ),
     );
   }
 
-  static TextTheme get _textTheme {
+  static TextTheme _textTheme(bool isDark) {
+    final Color textColor = isDark ? const Color(0xFFE2E2E9) : const Color(0xFF191C21);
+    
     return TextTheme(
       displayLarge: GoogleFonts.inter(
         fontSize: 30,
         fontWeight: FontWeight.w600,
-        letterSpacing: -0.02 * 30,
-        height: 38 / 30,
+        color: textColor,
       ),
       headlineMedium: GoogleFonts.inter(
-        // Assuming Geist falls back to Inter if not available natively, or we can use inter for display as well
         fontSize: 20,
         fontWeight: FontWeight.w600,
-        letterSpacing: -0.01 * 20,
-        height: 28 / 20,
+        color: textColor,
       ),
       bodyLarge: GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w400,
-        height: 24 / 16,
+        color: textColor,
       ),
       bodyMedium: GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w400,
-        height: 20 / 14,
+        color: textColor,
       ),
       labelMedium: GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        letterSpacing: 0.05 * 12,
-        height: 16 / 12,
+        color: textColor.withValues(alpha: 0.7),
       ),
     );
   }
 
-  // A helper for monospace font
   static TextStyle get codeSmall {
     return GoogleFonts.jetBrainsMono(
       fontSize: 13,
       fontWeight: FontWeight.w400,
-      height: 18 / 13,
+      height: 1.5,
     );
   }
 }

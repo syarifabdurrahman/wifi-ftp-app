@@ -1,4 +1,6 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -6,6 +8,8 @@ import 'package:wifi_ftp_app/providers/file_provider.dart';
 import 'package:wifi_ftp_app/providers/ftp_provider.dart';
 import 'package:wifi_ftp_app/providers/settings_provider.dart';
 import 'package:wifi_ftp_app/theme/app_theme.dart';
+import 'package:wifi_ftp_app/widgets/animated_mesh_background.dart';
+import 'package:wifi_ftp_app/widgets/glass_container.dart';
 import 'package:wifi_ftp_app/widgets/native_ad_card.dart';
 import 'package:wifi_ftp_app/widgets/pulse_animation.dart';
 
@@ -13,6 +17,7 @@ class ConnectionScreen extends StatelessWidget {
   const ConnectionScreen({super.key});
 
   Future<void> _toggleServer(BuildContext context, FtpProvider ftpProvider, SettingsProvider settingsProvider) async {
+    HapticFeedback.mediumImpact();
     if (ftpProvider.isRunning) {
       await ftpProvider.stopServer();
     } else {
@@ -26,17 +31,24 @@ class ConnectionScreen extends StatelessWidget {
         );
         if (!success && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to start FTP Server. Check port or permissions.')),
+            const SnackBar(content: Text('Failed to start FTP Server.')),
           );
         }
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Storage permissions are required to start the FTP Server.')),
+            const SnackBar(content: Text('Storage permissions required.')),
           );
         }
       }
     }
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB"];
+    var i = (math.log(bytes) / math.log(1024)).floor();
+    return "${(bytes / math.pow(1024, i)).toStringAsFixed(1)} ${suffixes[i]}";
   }
 
   @override

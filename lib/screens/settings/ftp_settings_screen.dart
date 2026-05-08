@@ -70,6 +70,7 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                         icon: Icons.settings_ethernet,
                         title: 'Port Number',
                         subtitle: 'The port the FTP server listens on',
+                        onTap: () => _showPortDialog(context, settingsProvider),
                         trailing: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
@@ -188,6 +189,40 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
     );
   }
 
+  Future<void> _showPortDialog(BuildContext context, SettingsProvider settingsProvider) async {
+    final controller = TextEditingController(text: settingsProvider.port.toString());
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Port'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Port Number',
+            hintText: 'e.g. 2121',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () {
+              final port = int.tryParse(controller.text);
+              if (port != null && port > 0 && port < 65536) {
+                settingsProvider.setPort(port);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('SAVE'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -206,9 +241,10 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
     required String title,
     required String subtitle,
     required Widget trailing,
+    VoidCallback? onTap,
   }) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(

@@ -34,6 +34,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'WiFi FTP App',
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       home: const MainNavigationScreen(),
       debugShowCheckedModeBanner: false,
     );

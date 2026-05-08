@@ -8,6 +8,7 @@ class FtpProvider with ChangeNotifier {
   bool _isStarting = false;
   String _ipAddress = '0.0.0.0';
   int _activeConnections = 0;
+  int _totalBytesTransferred = 0;
   final List<String> _logs = [];
   StreamSubscription<Map<String, dynamic>?>? _serviceSubscription;
 
@@ -15,6 +16,7 @@ class FtpProvider with ChangeNotifier {
   bool get isStarting => _isStarting;
   String get ipAddress => _ipAddress;
   int get activeConnections => _activeConnections;
+  int get totalBytesTransferred => _totalBytesTransferred;
   List<String> get logs => List.unmodifiable(_logs);
 
   FtpProvider() {
@@ -45,6 +47,11 @@ class FtpProvider with ChangeNotifier {
           _activeConnections++;
         } else if (log.contains('disconnected')) {
           if (_activeConnections > 0) _activeConnections--;
+        } else if (log.contains('bytes transferred')) {
+          final match = RegExp(r'(\d+)\s+bytes').firstMatch(log);
+          if (match != null) {
+            _totalBytesTransferred += int.parse(match.group(1)!);
+          }
         }
         notifyListeners();
       }
@@ -59,6 +66,7 @@ class FtpProvider with ChangeNotifier {
             _ipAddress = event['ip'] as String;
           } else if (!_isRunning) {
             _activeConnections = 0;
+            _totalBytesTransferred = 0;
             _logs.clear();
           }
           
