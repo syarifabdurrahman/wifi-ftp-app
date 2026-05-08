@@ -45,7 +45,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           });
         },
         backgroundColor: AppTheme.surface,
-        indicatorColor: AppTheme.primaryContainer.withValues(alpha: 0.3),
+        indicatorColor: AppTheme.primaryContainer.withOpacity(0.3),
         elevation: 0,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: const [

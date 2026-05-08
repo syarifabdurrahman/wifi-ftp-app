@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:wifi_ftp_app/helpers/ad_helper.dart';
+import 'package:wifi_ftp_app/widgets/glass_container.dart';
 
 class NativeAdCard extends StatefulWidget {
   const NativeAdCard({super.key});
@@ -51,13 +52,9 @@ class _NativeAdCardState extends State<NativeAdCard> {
   @override
   Widget build(BuildContext context) {
     if (_isAdLoading) {
-      return Container(
+      return const GlassContainer(
         height: 100,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(
+        child: Center(
           child: SizedBox(
             width: 24,
             height: 24,
@@ -71,19 +68,11 @@ class _NativeAdCardState extends State<NativeAdCard> {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: SizedBox(
-          height: 320,
-          width: MediaQuery.of(context).size.width,
-          child: AdWidget(ad: _nativeAd!),
-        ),
+    return GlassContainer(
+      child: SizedBox(
+        height: 320,
+        width: MediaQuery.of(context).size.width,
+        child: AdWidget(ad: _nativeAd!),
       ),
     );
   }

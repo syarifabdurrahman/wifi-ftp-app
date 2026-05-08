@@ -34,10 +34,10 @@ class AdHelper {
   static NativeTemplateStyle get defaultNativeTemplateStyle {
     return NativeTemplateStyle(
       templateType: TemplateType.medium,
-      mainBackgroundColor: const Color(0xFFF5F5F5),
+      mainBackgroundColor: Colors.transparent,
       callToActionTextStyle: NativeTemplateTextStyle(
         textColor: Colors.white,
-        backgroundColor: const Color(0xFF2196F3),
+        backgroundColor: const Color(0xFF00478D),
         style: NativeTemplateFontStyle.normal,
         size: 14.0,
       ),

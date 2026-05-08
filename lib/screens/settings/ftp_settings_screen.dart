@@ -74,7 +74,7 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                         trailing: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryContainer.withValues(alpha: 0.1),
+                            color: AppTheme.primaryContainer.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -160,8 +160,8 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryContainer.withValues(alpha: 0.1),
-                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+                    color: AppTheme.primaryContainer.withOpacity(0.1),
+                    border: Border.all(color: AppTheme.primary.withOpacity(0.2)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -329,7 +329,7 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(4),
-                borderSide: BorderSide(color: AppTheme.primary.withValues(alpha: 0.5), width: 2),
+                borderSide: BorderSide(color: AppTheme.primary.withOpacity(0.5), width: 2),
               ),
             ),
           ),

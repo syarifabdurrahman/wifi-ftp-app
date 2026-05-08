@@ -54,279 +54,228 @@ class ConnectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () {},
-          ),
-        ],
+        backgroundColor: Colors.transparent,
       ),
-      body: Consumer2<FtpProvider, SettingsProvider>(
-        builder: (context, ftpProvider, settingsProvider, child) {
-          final isRunning = ftpProvider.isRunning;
-          final statusColor = isRunning ? AppTheme.primary : AppTheme.outline;
-          final statusText = isRunning ? 'Online' : 'Offline';
+      body: AnimatedMeshBackground(
+        child: Consumer2<FtpProvider, SettingsProvider>(
+          builder: (context, ftpProvider, settingsProvider, child) {
+            final isRunning = ftpProvider.isRunning;
+            final statusColor = isRunning ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline;
+            final ftpAddress = isRunning
+                ? 'ftp://${ftpProvider.ipAddress}:${settingsProvider.port}'
+                : 'Server offline';
 
-          final ftpAddress = isRunning
-              ? 'ftp://${ftpProvider.ipAddress}:${settingsProvider.port}'
-              : 'Server offline';
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Quick Stats Row
-                Row(
-                  children: [
-                    _buildQuickStat(
-                      context,
-                      title: 'Status',
-                      value: statusText,
-                      color: statusColor,
-                      icon: isRunning ? Icons.cloud_done : Icons.cloud_off,
-                    ),
-                    const SizedBox(width: 12),
-                    _buildQuickStat(
-                      context,
-                      title: 'Active Users',
-                      value: '${ftpProvider.activeConnections}',
-                      color: AppTheme.secondary,
-                      icon: Icons.people_outline,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                
-                // Connection Hero Card
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.5)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(16.0, MediaQuery.of(context).padding.top + 56 + 20, 16.0, 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Status & Connections Stats
+                  Row(
                     children: [
-                      if (isRunning) ...[
-                        QrImageView(
-                          data: ftpAddress,
-                          version: QrVersions.auto,
-                          size: 160.0,
-                          eyeStyle: QrEyeStyle(
-                            eyeShape: QrEyeShape.square,
-                            color: AppTheme.onSurface,
-                          ),
-                          dataModuleStyle: QrDataModuleStyle(
-                            dataModuleShape: QrDataModuleShape.circle,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      Text(
-                        'FTP Access URL',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: AppTheme.onSurfaceVariant,
-                          letterSpacing: 1.1,
-                        ),
+                      _buildQuickStat(
+                        context,
+                        title: 'Status',
+                        value: isRunning ? 'Online' : 'Offline',
+                        color: statusColor,
+                        icon: isRunning ? Icons.cloud_done : Icons.cloud_off,
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceContainer,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.link, color: AppTheme.primary, size: 20),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                ftpAddress,
-                                style: AppTheme.codeSmall.copyWith(
-                                  color: isRunning ? AppTheme.primary : AppTheme.outline,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.copy_all, size: 20),
-                              onPressed: () {},
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          ],
-                        ),
+                      const SizedBox(width: 12),
+                      _buildQuickStat(
+                        context,
+                        title: 'Active Users',
+                        value: '${ftpProvider.activeConnections}',
+                        color: Theme.of(context).colorScheme.secondary,
+                        icon: Icons.people_outline,
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 32),
-
-                // Pulse Button
-                Center(
-                  child: PulseAnimation(
-                    isRunning: isRunning,
-                    color: statusColor,
-                    child: InkWell(
-                      onTap: () => _toggleServer(context, ftpProvider, settingsProvider),
-                      customBorder: const CircleBorder(),
-                      child: Container(
-                        width: 160,
-                        height: 160,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: isRunning 
-                              ? [AppTheme.primary, AppTheme.primary.withValues(alpha: 0.8)]
-                              : [AppTheme.outline, AppTheme.outline.withValues(alpha: 0.7)],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: statusColor.withValues(alpha: 0.4),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                  const SizedBox(height: 24),
+                  
+                  // Connection Hero Card (Glassmorphism)
+                  GlassContainer(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        if (isRunning) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              isRunning ? Icons.power_settings_new : Icons.play_arrow_rounded,
-                              color: AppTheme.onPrimary,
-                              size: 56,
-                            ),
-                            Text(
-                              isRunning ? 'STOP' : 'START',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: AppTheme.onPrimary,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
+                            child: QrImageView(
+                              data: ftpAddress,
+                              version: QrVersions.auto,
+                              size: 140.0,
+                              dataModuleStyle: const QrDataModuleStyle(
+                                dataModuleShape: QrDataModuleShape.circle,
+                                color: Color(0xFF191C21),
                               ),
                             ),
-                          ],
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                        Text(
+                          'FTP CONNECTION URL',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            letterSpacing: 1.5,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        InkWell(
+                          onTap: () {
+                            if (isRunning) {
+                              Clipboard.setData(ClipboardData(text: ftpAddress));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('URL copied to clipboard')),
+                              );
+                              HapticFeedback.selectionClick();
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.link, color: statusColor, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    ftpAddress,
+                                    style: AppTheme.codeSmall.copyWith(
+                                      color: isRunning ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.outline,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (isRunning) const Icon(Icons.copy, size: 18, color: AppTheme.outline),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 40),
-                
-                // Storage Insight
-                _buildSectionHeader(context, 'STORAGE INSIGHT'),
-                Consumer<FileProvider>(
-                  builder: (context, fileProvider, _) {
-                    final usedPercent = fileProvider.totalStorageGB > 0 
-                        ? fileProvider.usedStorageGB / fileProvider.totalStorageGB 
-                        : 0.0;
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.5)),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Device Storage',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-                              ),
-                              Text(
-                                '${fileProvider.usedStorageGB.toStringAsFixed(1)} GB / ${fileProvider.totalStorageGB.toStringAsFixed(1)} GB',
-                                style: Theme.of(context).textTheme.labelMedium,
+                  const SizedBox(height: 32),
+
+                  // Power Button
+                  Center(
+                    child: PulseAnimation(
+                      isRunning: isRunning,
+                      color: statusColor,
+                      child: GestureDetector(
+                        onTap: () => _toggleServer(context, ftpProvider, settingsProvider),
+                        child: Container(
+                          width: 140,
+                          height: 140,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: isRunning 
+                                ? [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primaryContainer]
+                                : [Theme.of(context).colorScheme.outline, Theme.of(context).colorScheme.outlineVariant],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: statusColor.withOpacity(0.3),
+                                blurRadius: 30,
+                                offset: const Offset(0, 10),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: LinearProgressIndicator(
-                              value: usedPercent,
-                              backgroundColor: AppTheme.surfaceContainer,
-                              color: usedPercent > 0.9 ? Colors.red : AppTheme.primary,
-                              minHeight: 10,
-                            ),
+                          child: Icon(
+                            isRunning ? Icons.power_settings_new : Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 64,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  
+                  // Transfer Stats Card
+                  if (isRunning) ...[
+                    _buildSectionHeader(context, 'DATA USAGE'),
+                    GlassContainer(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          _buildTransferItem(
+                            context,
+                            label: 'Total Transferred',
+                            value: _formatBytes(ftpProvider.totalBytesTransferred),
+                            icon: Icons.swap_vert_rounded,
                           ),
                         ],
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
-                // Recent Activity (Live Logs)
-                _buildSectionHeader(context, 'RECENT ACTIVITY'),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.5)),
-                  ),
-                  child: ftpProvider.logs.isEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Center(
-                            child: Text(
-                              'No activity yet',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.onSurfaceVariant),
+                  // Storage Insight
+                  _buildSectionHeader(context, 'STORAGE INSIGHT'),
+                  Consumer<FileProvider>(
+                    builder: (context, fileProvider, _) {
+                      final usedPercent = fileProvider.totalStorageGB > 0 
+                          ? fileProvider.usedStorageGB / fileProvider.totalStorageGB 
+                          : 0.0;
+                      return GlassContainer(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Device Storage',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  '${fileProvider.usedStorageGB.toStringAsFixed(1)} / ${fileProvider.totalStorageGB.toStringAsFixed(1)} GB',
+                                  style: Theme.of(context).textTheme.labelMedium,
+                                ),
+                              ],
                             ),
-                          ),
-                        )
-: Column(
-                          children: ftpProvider.logs.take(5).map((log) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 6.0),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.chevron_right, size: 16, color: AppTheme.secondary),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      log,
-                                      style: AppTheme.codeSmall.copyWith(fontSize: 12),
-                                    ),
-                                  ),
-                                ],
+                            const SizedBox(height: 16),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: LinearProgressIndicator(
+                                value: usedPercent,
+                                backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.3),
+                                color: usedPercent > 0.9 ? Colors.redAccent : Theme.of(context).colorScheme.primary,
+                                minHeight: 12,
                               ),
-                            );
-                          }).toList(),
+                            ),
+                          ],
                         ),
-                ),
-                const SizedBox(height: 24),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 32),
 
-                // Native Ad Card
-                _buildSectionHeader(context, 'SPONSORED'),
-                const NativeAdCard(),
-                const SizedBox(height: 24),
-
-                // Native Ad Card
-                _buildSectionHeader(context, 'SPONSORED'),
-                const NativeAdCard(),
-                const SizedBox(height: 24),
-              ],
-            ),
-          );
-        },
+                  // Native Ad Card
+                  const NativeAdCard(),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -338,16 +287,19 @@ class ConnectionScreen extends StatelessWidget {
     required IconData icon,
   }) {
     return Expanded(
-      child: Container(
+      child: GlassContainer(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.1)),
-        ),
+        opacity: 0.05,
         child: Row(
           children: [
-            Icon(icon, color: color, size: 24),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -355,12 +307,11 @@ class ConnectionScreen extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color.withValues(alpha: 0.7)),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10),
                   ),
                   Text(
                     value,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: color,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -373,14 +324,31 @@ class ConnectionScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildTransferItem(BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
+          const SizedBox(height: 8),
+          Text(label, style: Theme.of(context).textTheme.labelSmall),
+          Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
         title,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: AppTheme.onSurfaceVariant,
-          letterSpacing: 1.2,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          letterSpacing: 2.0,
           fontWeight: FontWeight.bold,
         ),
       ),

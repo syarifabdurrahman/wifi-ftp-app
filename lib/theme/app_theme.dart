@@ -80,7 +80,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.background,
+      scaffoldBackgroundColor: colorScheme.surface,
       textTheme: _textTheme(isDark),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -100,13 +100,13 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: isDark ? const Color(0xFF1E2025) : surfaceContainerLowest,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.2 : 0.5),
+            color: colorScheme.outlineVariant.withOpacity(isDark ? 0.2 : 0.5),
           ),
         ),
       ),
@@ -140,7 +140,7 @@ class AppTheme {
       labelMedium: GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        color: textColor.withValues(alpha: 0.7),
+        color: textColor.withOpacity(0.7),
       ),
     );
   }

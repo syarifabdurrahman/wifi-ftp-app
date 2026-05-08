@@ -70,10 +70,10 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                       decoration: BoxDecoration(
                         color: AppTheme.surfaceContainerLowest,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.5)),
+                        border: Border.all(color: AppTheme.outlineVariant.withOpacity(0.5)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.02),
+                            color: Colors.black.withOpacity(0.02),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -215,7 +215,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off_rounded, size: 64, color: AppTheme.outline.withValues(alpha: 0.5)),
+          Icon(Icons.search_off_rounded, size: 64, color: AppTheme.outline.withOpacity(0.5)),
           const SizedBox(height: 16),
           Text(
             'No matching files found',
@@ -241,7 +241,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppTheme.surfaceContainerLowest,
-          border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.5)),
+          border: Border.all(color: AppTheme.outlineVariant.withOpacity(0.5)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -250,7 +250,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 28),
@@ -312,7 +312,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppTheme.surfaceContainerLowest,
-        border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(color: AppTheme.outlineVariant.withOpacity(0.5)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -321,7 +321,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: extColor.withValues(alpha: 0.1),
+              color: extColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Center(

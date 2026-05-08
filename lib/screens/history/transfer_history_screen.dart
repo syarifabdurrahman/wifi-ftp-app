@@ -32,7 +32,7 @@ class TransferHistoryScreen extends StatelessWidget {
                   Icon(
                     Icons.history_edu_rounded,
                     size: 64,
-                    color: AppTheme.outline.withValues(alpha: 0.3),
+                    color: AppTheme.outline.withOpacity(0.3),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -91,7 +91,7 @@ class TransferHistoryScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(color: AppTheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +99,7 @@ class TransferHistoryScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 18),
