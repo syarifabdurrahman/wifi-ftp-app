@@ -78,8 +78,8 @@ class MeshPainter extends CustomPainter {
     void drawBlob(Offset center, double radius, Color color) {
       final gradient = RadialGradient(
         colors: [
-          color.withOpacity(isDark ? 0.15 : 0.08),
-          color.withOpacity(0),
+          color.withValues(alpha: isDark ? 0.15 : 0.08),
+          color.withValues(alpha: 0),
         ],
       );
       paint.shader = gradient.createShader(Rect.fromCircle(center: center, radius: radius));
@@ -107,7 +107,7 @@ class MeshPainter extends CustomPainter {
       size.width * (0.8 + 0.1 * cos(t * 1.2)),
       size.height * (0.5 + 0.4 * sin(t * 0.8)),
     );
-    drawBlob(center3, size.width * 0.7, primaryColor.withOpacity(0.5));
+    drawBlob(center3, size.width * 0.7, primaryColor.withValues(alpha: 0.5));
   }
 
   @override

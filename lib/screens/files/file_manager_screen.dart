@@ -68,12 +68,12 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                     // Search Bar
                     Container(
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceContainerLowest,
+                        color: AppTheme.getCardColor(context),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppTheme.outlineVariant.withOpacity(0.5)),
+                        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.02),
+                            color: Colors.black.withValues(alpha: 0.02),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -82,7 +82,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
-                          const Icon(Icons.search, color: AppTheme.primary, size: 20),
+                          Icon(Icons.search, color: Theme.of(context).colorScheme.primary, size: 20),
                           const SizedBox(width: 12),
                           Expanded(
                             child: TextField(
@@ -95,7 +95,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                               decoration: InputDecoration(
                                 hintText: 'Search in this folder...',
                                 hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AppTheme.outline,
+                                  color: Theme.of(context).colorScheme.outline,
                                 ),
                                 border: InputBorder.none,
                                 isDense: true,
@@ -120,7 +120,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                     // Breadcrumbs style path
                     Row(
                       children: [
-                        const Icon(Icons.folder_open, size: 18, color: AppTheme.secondary),
+                        Icon(Icons.folder_open, size: 18, color: Theme.of(context).colorScheme.secondary),
                         const SizedBox(width: 8),
                         Expanded(
                           child: SingleChildScrollView(
@@ -128,7 +128,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                             child: Text(
                               fileProvider.currentPath.replaceFirst('/storage/emulated/0', 'Root'),
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.onSurfaceVariant,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -162,7 +162,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                                   icon: Icons.keyboard_return,
                                   name: '.. (Up)',
                                   subtitle: 'Go to parent folder',
-                                  color: AppTheme.outline,
+                                  color: Theme.of(context).colorScheme.outline,
                                 );
                               }
 
@@ -189,7 +189,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                                   icon: Icons.folder_rounded,
                                   name: p.basename(fileEntity.path),
                                   subtitle: 'Folder • ${_formatDate(stat.modified)}',
-                                  color: AppTheme.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                 );
                               } else {
                                 return _buildFileItem(
@@ -215,11 +215,11 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off_rounded, size: 64, color: AppTheme.outline.withOpacity(0.5)),
+          Icon(Icons.search_off_rounded, size: 64, color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Text(
             'No matching files found',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppTheme.onSurfaceVariant),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -240,8 +240,8 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceContainerLowest,
-          border: Border.all(color: AppTheme.outlineVariant.withOpacity(0.5)),
+          color: AppTheme.getCardColor(context),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -250,7 +250,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 28),
@@ -270,13 +270,13 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppTheme.outlineVariant),
+            Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant),
           ],
         ),
       ),
@@ -291,7 +291,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     required String extension,
   }) {
     // Determine color based on extension
-    Color extColor = AppTheme.secondary;
+    Color extColor = Theme.of(context).colorScheme.secondary;
     IconData icon = Icons.insert_drive_file_rounded;
 
     if (['JPG', 'PNG', 'WEBP', 'GIF'].contains(extension)) {
@@ -311,8 +311,8 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLowest,
-        border: Border.all(color: AppTheme.outlineVariant.withOpacity(0.5)),
+        color: AppTheme.getCardColor(context),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -321,7 +321,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: extColor.withOpacity(0.1),
+              color: extColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Center(
@@ -352,13 +352,13 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                 Text(
                   '$size • $date',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppTheme.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.more_vert, color: AppTheme.outlineVariant),
+          Icon(Icons.more_vert, color: Theme.of(context).colorScheme.outlineVariant),
         ],
       ),
     );

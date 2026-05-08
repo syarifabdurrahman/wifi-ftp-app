@@ -76,7 +76,7 @@ class _PulseAnimationState extends State<PulseAnimation> with SingleTickerProvid
                     height: 160 * _animation.value,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: widget.color.withOpacity(0.4),
+                      color: widget.color.withValues(alpha: 0.4),
                     ),
                   ),
                 );
@@ -95,7 +95,7 @@ class _PulseAnimationState extends State<PulseAnimation> with SingleTickerProvid
                     height: 160 * secondaryScale,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: widget.color.withOpacity(0.2),
+                      color: widget.color.withValues(alpha: 0.2),
                     ),
                   ),
                 );

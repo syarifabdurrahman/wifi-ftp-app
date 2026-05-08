@@ -141,9 +141,9 @@ class ConnectionScreen extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+                              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3)),
+                              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               children: [
@@ -160,7 +160,7 @@ class ConnectionScreen extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                if (isRunning) const Icon(Icons.copy, size: 18, color: AppTheme.outline),
+                                if (isRunning) Icon(Icons.copy, size: 18, color: Theme.of(context).colorScheme.outline),
                               ],
                             ),
                           ),
@@ -191,7 +191,7 @@ class ConnectionScreen extends StatelessWidget {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: statusColor.withOpacity(0.3),
+                                color: statusColor.withValues(alpha: 0.3),
                                 blurRadius: 30,
                                 offset: const Offset(0, 10),
                               ),
@@ -256,7 +256,7 @@ class ConnectionScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                               child: LinearProgressIndicator(
                                 value: usedPercent,
-                                backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.3),
+                                backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
                                 color: usedPercent > 0.9 ? Colors.redAccent : Theme.of(context).colorScheme.primary,
                                 minHeight: 12,
                               ),
@@ -295,7 +295,7 @@ class ConnectionScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 20),
@@ -347,7 +347,7 @@ class ConnectionScreen extends StatelessWidget {
       child: Text(
         title,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
           letterSpacing: 2.0,
           fontWeight: FontWeight.bold,
         ),

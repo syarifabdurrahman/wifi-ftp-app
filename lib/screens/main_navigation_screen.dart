@@ -44,29 +44,29 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             _currentIndex = index;
           });
         },
-        backgroundColor: AppTheme.surface,
-        indicatorColor: AppTheme.primaryContainer.withOpacity(0.3),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        indicatorColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
         elevation: 0,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.settings_remote_outlined),
-            selectedIcon: Icon(Icons.settings_remote, color: AppTheme.primary),
+            icon: const Icon(Icons.settings_remote_outlined),
+            selectedIcon: Icon(Icons.settings_remote, color: Theme.of(context).colorScheme.primary),
             label: 'Connection',
           ),
           NavigationDestination(
-            icon: Icon(Icons.folder_outlined),
-            selectedIcon: Icon(Icons.folder, color: AppTheme.primary),
+            icon: const Icon(Icons.folder_outlined),
+            selectedIcon: Icon(Icons.folder, color: Theme.of(context).colorScheme.primary),
             label: 'Files',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history, color: AppTheme.primary),
+            icon: const Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history, color: Theme.of(context).colorScheme.primary),
             label: 'History',
           ),
           NavigationDestination(
-            icon: Icon(Icons.tune_outlined),
-            selectedIcon: Icon(Icons.tune, color: AppTheme.primary),
+            icon: const Icon(Icons.tune_outlined),
+            selectedIcon: Icon(Icons.tune, color: Theme.of(context).colorScheme.primary),
             label: 'Settings',
           ),
         ],

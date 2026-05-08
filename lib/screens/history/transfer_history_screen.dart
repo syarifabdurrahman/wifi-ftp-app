@@ -32,20 +32,20 @@ class TransferHistoryScreen extends StatelessWidget {
                   Icon(
                     Icons.history_edu_rounded,
                     size: 64,
-                    color: AppTheme.outline.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No activity recorded yet',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Start the server to see real-time events.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -69,11 +69,11 @@ class TransferHistoryScreen extends StatelessWidget {
   Widget _buildLogEntry(BuildContext context, String log) {
     // Basic parsing for better icons
     IconData icon = Icons.info_outline_rounded;
-    Color color = AppTheme.secondary;
+    Color color = Theme.of(context).colorScheme.secondary;
 
     if (log.contains('Command:')) {
       icon = Icons.terminal_rounded;
-      color = AppTheme.primary;
+      color = Theme.of(context).colorScheme.primary;
     } else if (log.contains('connected')) {
       icon = Icons.person_add_rounded;
       color = Colors.green;
@@ -82,16 +82,16 @@ class TransferHistoryScreen extends StatelessWidget {
       color = Colors.orange;
     } else if (log.contains('Error')) {
       icon = Icons.error_outline_rounded;
-      color = AppTheme.error;
+      color = Theme.of(context).colorScheme.error;
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLowest,
+        color: AppTheme.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +99,7 @@ class TransferHistoryScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 18),
@@ -113,14 +113,14 @@ class TransferHistoryScreen extends StatelessWidget {
                   log,
                   style: AppTheme.codeSmall.copyWith(
                     fontSize: 13,
-                    color: AppTheme.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _getTimeString(),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppTheme.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

@@ -25,11 +25,6 @@ void notificationTapBackground(NotificationResponse notificationResponse) {
 
 class BackgroundServiceManager {
   static final FlutterBackgroundService _service = FlutterBackgroundService();
-  static FtpServer? _ftpServer;
-  static bool _isServerStarted = false;
-  static bool _serviceStarted = false;
-  static String _currentIP = '0.0.0.0';
-  static int _currentPort = 2121;
 
   static Future<void> initialize() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -82,21 +77,13 @@ class BackgroundServiceManager {
     debugPrint('BackgroundServiceManager: Starting service...');
     
     try {
-      // Start the background service first
       final isRunning = await _service.isRunning();
-      debugPrint('BackgroundServiceManager: Service running: $isRunning');
       
       if (!isRunning) {
-        debugPrint('BackgroundServiceManager: Starting background service...');
         _service.startService();
         await Future.delayed(const Duration(milliseconds: 1000));
-        debugPrint('BackgroundServiceManager: Service started');
       }
       
-      _serviceStarted = true;
-
-      // Now invoke startServer
-      debugPrint('BackgroundServiceManager: Invoking startServer event');
       _service.invoke('startServer', {
         'port': port,
         'rootPath': rootPath,
@@ -106,18 +93,15 @@ class BackgroundServiceManager {
       });
       
       return true;
-    } catch (e, stack) {
+    } catch (e) {
       debugPrint('BackgroundServiceManager: Error: $e');
-      debugPrint('Stack: $stack');
       return false;
     }
   }
 
   static Future<void> stopService() async {
-    debugPrint('BackgroundServiceManager: Stopping service...');
     try {
       _service.invoke('stopServer');
-      _isServerStarted = false;
     } catch (e) {
       debugPrint('BackgroundServiceManager: Stop error: $e');
     }
@@ -132,8 +116,7 @@ class BackgroundServiceManager {
   }
 
   static Future<bool> isServiceRunning() async {
-    final result = await _service.isRunning();
-    return result ?? false;
+    return await _service.isRunning();
   }
 }
 

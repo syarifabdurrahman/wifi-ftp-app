@@ -38,6 +38,18 @@ class AppTheme {
   static const Color surfaceContainerHigh = Color(0xFFE7E8F0);
   static const Color surfaceContainerHighest = Color(0xFFE1E2EA);
 
+  // Dynamic helpers
+  static Color getCardColor(BuildContext context) {
+    return Theme.of(context).cardTheme.color ?? 
+           (Theme.of(context).brightness == Brightness.dark 
+            ? const Color(0xFF1E2025) 
+            : surfaceContainerLowest);
+  }
+
+  static Color getSurfaceColor(BuildContext context) {
+    return Theme.of(context).colorScheme.surface;
+  }
+
   static ThemeData get lightTheme {
     return _buildTheme(Brightness.light);
   }
@@ -67,12 +79,10 @@ class AppTheme {
       onError: onError,
       errorContainer: errorContainer,
       onErrorContainer: onErrorContainer,
-      background: isDark ? const Color(0xFF111318) : background,
-      onBackground: isDark ? const Color(0xFFE2E2E9) : onBackground,
       surface: isDark ? const Color(0xFF111318) : surface,
       onSurface: isDark ? const Color(0xFFE2E2E9) : onSurface,
       onSurfaceVariant: isDark ? const Color(0xFFC2C6D4) : onSurfaceVariant,
-      surfaceVariant: isDark ? const Color(0xFF424752) : surfaceVariant,
+      surfaceContainerHighest: isDark ? const Color(0xFF424752) : surfaceContainerHighest,
       outline: isDark ? const Color(0xFF8C919E) : outline,
       outlineVariant: isDark ? const Color(0xFF424752) : outlineVariant,
     );
@@ -106,7 +116,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: colorScheme.outlineVariant.withOpacity(isDark ? 0.2 : 0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.2 : 0.5),
           ),
         ),
       ),
@@ -140,7 +150,7 @@ class AppTheme {
       labelMedium: GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        color: textColor.withOpacity(0.7),
+        color: textColor.withValues(alpha: 0.7),
       ),
     );
   }

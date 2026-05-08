@@ -44,14 +44,15 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                 Text(
                   'Settings',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppTheme.onSurface,
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Configure your server behavior and security.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -60,9 +61,9 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                 _buildSectionHeader('NETWORK CONFIGURATION'),
                 Container(
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerLowest,
+                    color: AppTheme.getCardColor(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.outlineVariant),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
                   ),
                   child: Column(
                     children: [
@@ -74,12 +75,12 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                         trailing: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryContainer.withOpacity(0.1),
+                            color: AppTheme.primaryContainer.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             '${settingsProvider.port}',
-                            style: AppTheme.codeSmall.copyWith(color: AppTheme.primary),
+                            style: AppTheme.codeSmall.copyWith(color: Theme.of(context).colorScheme.primary),
                           ),
                         ),
                       ),
@@ -88,7 +89,7 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                         icon: Icons.folder_open,
                         title: 'Root Folder',
                         subtitle: settingsProvider.rootFolder,
-                        trailing: const Icon(Icons.chevron_right, color: AppTheme.onSurfaceVariant),
+                        trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -99,9 +100,9 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                 _buildSectionHeader('SECURITY & ACCESS'),
                 Container(
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerLowest,
+                    color: AppTheme.getCardColor(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.outlineVariant),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
                   ),
                   child: Column(
                     children: [
@@ -112,7 +113,6 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                         trailing: Switch(
                           value: settingsProvider.anonymousAccess,
                           onChanged: (val) => settingsProvider.setAnonymousAccess(val),
-                          activeColor: AppTheme.primary,
                         ),
                       ),
                       const Divider(height: 1, color: AppTheme.outlineVariant),
@@ -135,13 +135,60 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                 ),
                 const SizedBox(height: 32),
 
+                // Appearance Group
+                _buildSectionHeader('APPEARANCE'),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.getCardColor(context),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildSettingItem(
+                        icon: Icons.brightness_6,
+                        title: 'Theme Mode',
+                        subtitle: _getThemeModeName(settingsProvider.themeMode),
+                        trailing: SegmentedButton<ThemeMode>(
+                          segments: const [
+                            ButtonSegment(
+                              value: ThemeMode.light,
+                              icon: Icon(Icons.light_mode_outlined, size: 18),
+                            ),
+                            ButtonSegment(
+                              value: ThemeMode.system,
+                              icon: Icon(Icons.settings_brightness, size: 18),
+                            ),
+                            ButtonSegment(
+                              value: ThemeMode.dark,
+                              icon: Icon(Icons.dark_mode_outlined, size: 18),
+                            ),
+                          ],
+                          selected: {settingsProvider.themeMode},
+                          onSelectionChanged: (Set<ThemeMode> newSelection) {
+                            settingsProvider.setThemeMode(newSelection.first);
+                          },
+                          style: SegmentedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            selectedBackgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                            selectedForegroundColor: Theme.of(context).colorScheme.primary,
+                            side: BorderSide.none,
+                          ),
+                          showSelectedIcon: false,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+
                 // Advanced Group
                 _buildSectionHeader('ADVANCED'),
                 Container(
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerLowest,
+                    color: AppTheme.getCardColor(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.outlineVariant),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
                   ),
                   child: _buildSettingItem(
                     icon: Icons.light_mode,
@@ -150,7 +197,6 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                     trailing: Switch(
                       value: settingsProvider.keepScreenOn,
                       onChanged: (val) => settingsProvider.setKeepScreenOn(val),
-                      activeColor: AppTheme.primary,
                     ),
                   ),
                 ),
@@ -160,20 +206,20 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryContainer.withOpacity(0.1),
-                    border: Border.all(color: AppTheme.primary.withOpacity(0.2)),
+                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+                    border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.info, color: AppTheme.primary),
+                      Icon(Icons.info, color: Theme.of(context).colorScheme.primary),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Changes to Port and Security settings will require a server restart to take effect.',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.primary,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
@@ -187,6 +233,17 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
         );
       },
     );
+  }
+
+  String _getThemeModeName(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return 'Light';
+      case ThemeMode.dark:
+        return 'Dark';
+      case ThemeMode.system:
+        return 'System';
+    }
   }
 
   Future<void> _showPortDialog(BuildContext context, SettingsProvider settingsProvider) async {
@@ -229,8 +286,9 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
       child: Text(
         title,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: AppTheme.primary,
+          color: Theme.of(context).colorScheme.primary,
           letterSpacing: 1.2,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -249,7 +307,7 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            Icon(icon, color: AppTheme.secondary),
+            Icon(icon, color: Theme.of(context).colorScheme.secondary),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -259,13 +317,13 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                     title,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -293,7 +351,7 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
           Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppTheme.secondary,
+              color: Theme.of(context).colorScheme.secondary,
             ),
           ),
           const SizedBox(height: 8),
@@ -302,12 +360,12 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
             obscureText: isPassword && _obscurePassword,
             onChanged: onChanged,
             decoration: InputDecoration(
-              prefixIcon: Icon(icon, color: AppTheme.outline),
+              prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.outline),
               suffixIcon: isPassword
                   ? IconButton(
                       icon: Icon(
                         _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                        color: AppTheme.outline,
+                        color: Theme.of(context).colorScheme.outline,
                       ),
                       onPressed: () {
                         setState(() {
@@ -317,19 +375,19 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                     )
                   : null,
               filled: true,
-              fillColor: AppTheme.surface,
+              fillColor: AppTheme.getSurfaceColor(context),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(4),
-                borderSide: const BorderSide(color: AppTheme.outlineVariant),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(4),
-                borderSide: const BorderSide(color: AppTheme.outlineVariant),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(4),
-                borderSide: BorderSide(color: AppTheme.primary.withOpacity(0.5), width: 2),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), width: 2),
               ),
             ),
           ),

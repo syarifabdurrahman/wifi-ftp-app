@@ -31,11 +31,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settingsProvider = context.watch<SettingsProvider>();
+
     return MaterialApp(
       title: 'WiFi FTP App',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: settingsProvider.themeMode,
       home: const MainNavigationScreen(),
       debugShowCheckedModeBanner: false,
     );

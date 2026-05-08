@@ -11,6 +11,7 @@ class SettingsProvider with ChangeNotifier {
   String _username = 'admin';
   String _password = 'password';
   bool _keepScreenOn = true;
+  ThemeMode _themeMode = ThemeMode.system;
 
   bool get isInitialized => _isInitialized;
   int get port => _port;
@@ -19,6 +20,7 @@ class SettingsProvider with ChangeNotifier {
   String get username => _username;
   String get password => _password;
   bool get keepScreenOn => _keepScreenOn;
+  ThemeMode get themeMode => _themeMode;
 
   SettingsProvider() {
     _initPrefs();
@@ -32,6 +34,7 @@ class SettingsProvider with ChangeNotifier {
     _username = _prefs.getString('username') ?? 'admin';
     _password = _prefs.getString('password') ?? 'password';
     _keepScreenOn = _prefs.getBool('keepScreenOn') ?? true;
+    _themeMode = ThemeMode.values[_prefs.getInt('themeMode') ?? 0];
     _isInitialized = true;
     notifyListeners();
   }
@@ -69,6 +72,12 @@ class SettingsProvider with ChangeNotifier {
   Future<void> setKeepScreenOn(bool value) async {
     _keepScreenOn = value;
     await _prefs.setBool('keepScreenOn', value);
+    notifyListeners();
+  }
+
+  Future<void> setThemeMode(ThemeMode value) async {
+    _themeMode = value;
+    await _prefs.setInt('themeMode', value.index);
     notifyListeners();
   }
 }
