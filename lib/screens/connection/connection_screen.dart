@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wifi_ftp_app/providers/file_provider.dart';
 import 'package:wifi_ftp_app/providers/ftp_provider.dart';
 import 'package:wifi_ftp_app/providers/settings_provider.dart';
 import 'package:wifi_ftp_app/theme/app_theme.dart';
+import 'package:wifi_ftp_app/widgets/native_ad_card.dart';
 import 'package:wifi_ftp_app/widgets/pulse_animation.dart';
 
 class ConnectionScreen extends StatelessWidget {
@@ -278,7 +279,7 @@ class ConnectionScreen extends StatelessWidget {
                             ),
                           ),
                         )
-                      : Column(
+: Column(
                           children: ftpProvider.logs.take(5).map((log) {
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 6.0),
@@ -299,6 +300,16 @@ class ConnectionScreen extends StatelessWidget {
                           }).toList(),
                         ),
                 ),
+                const SizedBox(height: 24),
+
+                // Native Ad Card
+                _buildSectionHeader(context, 'SPONSORED'),
+                const NativeAdCard(),
+                const SizedBox(height: 24),
+
+                // Native Ad Card
+                _buildSectionHeader(context, 'SPONSORED'),
+                const NativeAdCard(),
                 const SizedBox(height: 24),
               ],
             ),

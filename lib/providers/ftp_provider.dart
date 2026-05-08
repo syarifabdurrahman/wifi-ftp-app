@@ -1,18 +1,15 @@
-import 'dart:io';
-
-import 'package:flutter/material.dart';
-import 'package:ftp_server/ftp_server.dart';
-import 'package:ftp_server/server_type.dart';
-import 'package:ftp_server/file_operations/physical_file_operations.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:network_info_plus/network_info_plus.dart';
+import 'package:wifi_ftp_app/services/background_service.dart';
 
 class FtpProvider with ChangeNotifier {
-  FtpServer? _ftpServer;
   bool _isRunning = false;
   bool _isStarting = false;
   String _ipAddress = '0.0.0.0';
   int _activeConnections = 0;
   final List<String> _logs = [];
+  StreamSubscription<Map<String, dynamic>?>? _serviceSubscription;
 
   bool get isRunning => _isRunning;
   String get ipAddress => _ipAddress;
@@ -21,6 +18,38 @@ class FtpProvider with ChangeNotifier {
 
   FtpProvider() {
     _initNetworkInfo();
+    _listenToServiceUpdates();
+  }
+
+  void _listenToServiceUpdates() {
+    _serviceSubscription = BackgroundServiceManager.onDataReceived.listen((event) {
+      if (event != null) {
+        if (event.containsKey('message')) {
+          final log = event['message'] as String;
+          _logs.insert(0, log);
+          if (_logs.length > 20) _logs.removeLast();
+
+          if (log.contains('logged in')) {
+            _activeConnections++;
+          } else if (log.contains('disconnected')) {
+            if (_activeConnections > 0) _activeConnections--;
+          }
+          notifyListeners();
+        }
+        if (event.containsKey('running')) {
+          _isRunning = event['running'] as bool;
+          if (!_isRunning) {
+            _activeConnections = 0;
+            _logs.clear();
+          }
+          notifyListeners();
+        }
+        if (event.containsKey('ip')) {
+          _ipAddress = event['ip'] as String;
+          notifyListeners();
+        }
+      }
+    });
   }
 
   Future<void> _initNetworkInfo() async {
@@ -46,40 +75,21 @@ class FtpProvider with ChangeNotifier {
     if (_isRunning || _isStarting) return true;
     
     _isStarting = true;
+    notifyListeners();
 
     try {
-      await refreshNetworkInfo();
-      
-      final rootDir = Directory(rootPath);
-      if (!rootDir.existsSync()) {
-        rootDir.createSync(recursive: true);
-      }
+      _isStarting = false;
+      _isRunning = true;
+      notifyListeners();
 
-      _ftpServer = FtpServer(
-        port,
-        username: anonymous ? null : username,
-        password: anonymous ? null : password,
-        fileOperations: PhysicalFileOperations(rootPath),
-        serverType: ServerType.readAndWrite,
-        logFunction: (log) {
-          debugPrint('FTP SERVER: $log');
-          _logs.insert(0, log);
-          if (_logs.length > 20) _logs.removeLast();
-          
-          if (log.contains('logged in')) {
-            _activeConnections++;
-            notifyListeners();
-          } else if (log.contains('disconnected')) {
-            if (_activeConnections > 0) _activeConnections--;
-            notifyListeners();
-          }
-        },
+      await BackgroundServiceManager.startService(
+        port: port,
+        rootPath: rootPath,
+        anonymous: anonymous,
+        username: username,
+        password: password,
       );
 
-      await _ftpServer!.startInBackground();
-      _isRunning = true;
-      _isStarting = false;
-      notifyListeners();
       return true;
     } catch (e) {
       debugPrint('Error starting FTP server: $e');
@@ -94,7 +104,7 @@ class FtpProvider with ChangeNotifier {
     if (!_isRunning) return;
 
     try {
-      await _ftpServer?.stop();
+      await BackgroundServiceManager.stopService();
       _isRunning = false;
       _activeConnections = 0;
       _logs.clear();
@@ -106,7 +116,7 @@ class FtpProvider with ChangeNotifier {
 
   @override
   void dispose() {
-    _ftpServer?.stop();
+    _serviceSubscription?.cancel();
     super.dispose();
   }
 }
