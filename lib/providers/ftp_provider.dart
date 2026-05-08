@@ -12,6 +12,7 @@ class FtpProvider with ChangeNotifier {
   StreamSubscription<Map<String, dynamic>?>? _serviceSubscription;
 
   bool get isRunning => _isRunning;
+  bool get isStarting => _isStarting;
   String get ipAddress => _ipAddress;
   int get activeConnections => _activeConnections;
   List<String> get logs => List.unmodifiable(_logs);
@@ -19,35 +20,57 @@ class FtpProvider with ChangeNotifier {
   FtpProvider() {
     _initNetworkInfo();
     _listenToServiceUpdates();
+    _checkInitialStatus();
+  }
+
+  Future<void> _checkInitialStatus() async {
+    final isRunning = await BackgroundServiceManager.isServiceRunning();
+    if (isRunning) {
+      BackgroundServiceManager.invoke('getStatus');
+    }
   }
 
   void _listenToServiceUpdates() {
     _serviceSubscription = BackgroundServiceManager.onDataReceived.listen((event) {
-      if (event != null) {
-        if (event.containsKey('message')) {
-          final log = event['message'] as String;
-          _logs.insert(0, log);
-          if (_logs.length > 20) _logs.removeLast();
+      if (event == null) return;
 
-          if (log.contains('logged in')) {
-            _activeConnections++;
-          } else if (log.contains('disconnected')) {
-            if (_activeConnections > 0) _activeConnections--;
-          }
-          notifyListeners();
+      debugPrint('FtpProvider event: $event');
+
+      if (event.containsKey('message')) {
+        final log = event['message'] as String;
+        _logs.insert(0, log);
+        if (_logs.length > 20) _logs.removeLast();
+
+        if (log.contains('logged in')) {
+          _activeConnections++;
+        } else if (log.contains('disconnected')) {
+          if (_activeConnections > 0) _activeConnections--;
         }
-        if (event.containsKey('running')) {
-          _isRunning = event['running'] as bool;
-          if (!_isRunning) {
+        notifyListeners();
+      }
+
+      if (event.containsKey('running')) {
+        final newState = event['running'] as bool;
+        if (_isRunning != newState) {
+          _isRunning = newState;
+          _isStarting = false;
+          
+          if (_isRunning && event.containsKey('ip')) {
+            _ipAddress = event['ip'] as String;
+          } else if (!_isRunning) {
             _activeConnections = 0;
             _logs.clear();
           }
+          
+          debugPrint('FtpProvider: isRunning changed to $_isRunning');
           notifyListeners();
         }
-        if (event.containsKey('ip')) {
-          _ipAddress = event['ip'] as String;
-          notifyListeners();
-        }
+      }
+
+      if (event.containsKey('ip') && event['ip'] != null) {
+        _ipAddress = event['ip'] as String;
+        debugPrint('FtpProvider: ip changed to $_ipAddress');
+        notifyListeners();
       }
     });
   }
@@ -72,17 +95,16 @@ class FtpProvider with ChangeNotifier {
     required String username,
     required String password,
   }) async {
-    if (_isRunning || _isStarting) return true;
-    
+    if (_isRunning) return true;
+    if (_isStarting) return true;
+
     _isStarting = true;
+    _logs.clear();
     notifyListeners();
 
     try {
-      _isStarting = false;
-      _isRunning = true;
-      notifyListeners();
-
-      await BackgroundServiceManager.startService(
+      debugPrint('FtpProvider: Starting FTP server...');
+      final success = await BackgroundServiceManager.startService(
         port: port,
         rootPath: rootPath,
         anonymous: anonymous,
@@ -90,10 +112,23 @@ class FtpProvider with ChangeNotifier {
         password: password,
       );
 
+      if (!success) {
+        _isStarting = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Wait for service to respond
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // If still starting after 2 seconds, the service will update us
+      if (_isStarting) {
+        debugPrint('FtpProvider: Waiting for service confirmation...');
+      }
+
       return true;
     } catch (e) {
       debugPrint('Error starting FTP server: $e');
-      _isRunning = false;
       _isStarting = false;
       notifyListeners();
       return false;
@@ -101,17 +136,13 @@ class FtpProvider with ChangeNotifier {
   }
 
   Future<void> stopServer() async {
-    if (!_isRunning) return;
+    if (!_isRunning && !_isStarting) return;
 
-    try {
-      await BackgroundServiceManager.stopService();
-      _isRunning = false;
-      _activeConnections = 0;
-      _logs.clear();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error stopping FTP server: $e');
-    }
+    debugPrint('FtpProvider: Stopping FTP server');
+    _isStarting = false;
+    notifyListeners();
+
+    await BackgroundServiceManager.stopService();
   }
 
   @override
