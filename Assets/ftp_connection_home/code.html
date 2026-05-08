@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Geist:wght@500;600;700;800&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#191c21",
+                        "inverse-on-surface": "#eff0f8",
+                        "on-tertiary-fixed-variant": "#793100",
+                        "secondary-fixed": "#d3e4fe",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#341100",
+                        "surface-container-low": "#f2f3fb",
+                        "on-secondary-container": "#54647a",
+                        "secondary": "#505f76",
+                        "surface-variant": "#e1e2ea",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#ecedf6",
+                        "primary-container": "#005eb8",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "on-primary-fixed-variant": "#00468c",
+                        "inverse-primary": "#a9c7ff",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "outline": "#727783",
+                        "on-background": "#191c21",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#d0e1fb",
+                        "primary": "#00478d",
+                        "surface-bright": "#f9f9ff",
+                        "on-surface-variant": "#424752",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#ffdbcb",
+                        "on-primary-fixed": "#001b3d",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "surface-tint": "#005db6",
+                        "on-tertiary-container": "#ffcfb9",
+                        "surface-dim": "#d8dae2",
+                        "primary-fixed": "#d6e3ff",
+                        "outline-variant": "#c2c6d4",
+                        "primary-fixed-dim": "#a9c7ff",
+                        "on-primary-container": "#c8daff",
+                        "tertiary": "#793100",
+                        "inverse-surface": "#2e3037",
+                        "surface": "#f9f9ff",
+                        "tertiary-container": "#9f4300",
+                        "background": "#f9f9ff",
+                        "surface-container-highest": "#e1e2ea",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#e7e8f0",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "gutter": "12px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "container_margin": "16px"
+                    },
+                    "fontFamily": {
+                        "display": ["Geist"],
+                        "code-sm": ["JetBrains Mono"],
+                        "headline-md": ["Geist"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Geist"]
+                    },
+                    "fontSize": {
+                        "display": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "code-sm": ["13px", {"lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface border-b border-outline-variant flex items-center justify-between px-container_margin h-16 w-full fixed top-0 z-50">
+<div class="flex items-center gap-md">
+<button class="p-base rounded-full hover:bg-primary/8 transition-colors duration-200 active:bg-secondary-container/10">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+</button>
+<h1 class="font-display text-headline-md font-bold text-primary">FTP Server</h1>
+</div>
+<div class="flex items-center gap-base">
+<button class="p-base rounded-full hover:bg-primary/8 transition-colors duration-200 active:bg-secondary-container/10">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="settings">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 pb-24 px-container_margin max-w-lg mx-auto w-full">
+<!-- Status Card (Bento Style) -->
+<div class="grid grid-cols-4 gap-gutter mb-lg">
+<div class="col-span-4 bg-surface-container-lowest border border-outline-variant p-md rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-3 h-3 rounded-full bg-primary animate-pulse"></div>
+<span class="font-display text-label-md uppercase tracking-wider text-on-surface-variant">Status</span>
+</div>
+<span class="font-display text-headline-md font-semibold text-primary">Running</span>
+</div>
+<div class="col-span-2 bg-surface-container-lowest border border-outline-variant p-md rounded-xl flex flex-col gap-xs">
+<span class="font-display text-label-md text-on-surface-variant">Network</span>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="wifi">wifi</span>
+<span class="font-display font-semibold text-on-surface truncate">Home_5G_Network</span>
+</div>
+</div>
+<div class="col-span-2 bg-surface-container-lowest border border-outline-variant p-md rounded-xl flex flex-col gap-xs">
+<span class="font-display text-label-md text-on-surface-variant">Battery</span>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="battery_charging_80">battery_charging_80</span>
+<span class="font-display font-semibold text-on-surface">82%</span>
+</div>
+</div>
+</div>
+<!-- Connection Information (High Clarity Hero) -->
+<div class="bg-surface-container-lowest border border-outline-variant p-lg rounded-xl mb-lg flex flex-col items-center text-center">
+<div class="mb-md">
+<div class="p-md rounded-full bg-primary/5 mb-sm inline-block">
+<span class="material-symbols-outlined text-primary text-[48px]" data-icon="settings_remote">settings_remote</span>
+</div>
+<h2 class="font-display text-headline-md text-on-surface-variant">Server Address</h2>
+<div class="mt-sm bg-surface-container px-md py-sm rounded-lg flex items-center gap-sm">
+<code class="font-code-sm text-primary text-[18px] select-all">ftp://192.168.1.5:2121</code>
+<button class="hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="content_copy">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Toggle Action (Large Center Feature) -->
+<div class="flex flex-col items-center justify-center py-xl relative">
+<!-- Decorative concentric circles -->
+<div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+<div class="w-64 h-64 border-4 border-primary rounded-full"></div>
+<div class="absolute w-80 h-80 border-2 border-primary rounded-full"></div>
+</div>
+<button class="relative w-48 h-48 rounded-full bg-primary text-on-primary flex flex-col items-center justify-center shadow-lg active:scale-95 transition-all duration-150 border-[8px] border-primary-container/20 group">
+<span class="material-symbols-outlined text-[64px] mb-xs" data-icon="power_settings_new" data-weight="fill" style="font-variation-settings: 'FILL' 1;">power_settings_new</span>
+<span class="font-display text-headline-md font-bold">STOP</span>
+</button>
+<p class="mt-lg font-body-md text-on-surface-variant text-center max-w-[240px]">
+                Active connections: <span class="font-bold text-on-surface">3</span> users currently browsing files.
+            </p>
+</div>
+<!-- Storage Insight Card -->
+<div class="mt-lg bg-surface-container-lowest border border-outline-variant p-md rounded-xl">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-display text-label-md text-on-surface-variant">Internal Storage</span>
+<span class="font-display text-label-md font-semibold text-on-surface">45.2 GB / 128 GB</span>
+</div>
+<div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 35.3%;"></div>
+</div>
+</div>
+<!-- Visual Asset -->
+<div class="mt-xl rounded-xl overflow-hidden aspect-video border border-outline-variant">
+<img alt="Server Rack" class="w-full h-full object-cover" data-alt="A clean, close-up shot of a modern high-performance server rack in a data center with soft cyan and deep blue LED indicator lights. The environment is minimalist and clinical, emphasizing high-tech hardware and silent efficiency. The lighting is low-key with a focus on the glowing technical components, creating a professional corporate technology aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3HLWehdowynCzuC5AFkqP1anMT1svvW9KWMCz2eDVctRAaiZ20_WdUMmtB6pQ4P9rM6jYb6XJSJES5LjSORsIE4abv2Rjlg7eeWbdwnMuPCXrbmA_OEwgwtCUQ0n3M2nd8kBStiFaKqql_k8Ilk-D8U6C7Cf6aynl7bseTIAnrByfBml4miq9G31GJSNBXWlsMfTHy4l0e-ViwJ7erX4y5D_SCt5t8B5ZdzglqIi6_QYO1z2qPj7mzFwK60xv9loI1mN6JM3QWx0"/>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container-lowest border-t border-outline-variant flex justify-around items-center h-20 px-gutter fixed bottom-0 w-full z-50 shadow-sm">
+<!-- Connection Tab (Active) -->
+<a class="flex flex-col items-center justify-center text-primary bg-primary-container/20 rounded-full px-4 py-1 transition-transform duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="settings_remote" data-weight="fill" style="font-variation-settings: 'FILL' 1;">settings_remote</span>
+<span class="font-display text-label-md font-medium">Connection</span>
+</a>
+<!-- Files Tab -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-transform duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="folder">folder</span>
+<span class="font-display text-label-md font-medium">Files</span>
+</a>
+<!-- History Tab -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-transform duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-display text-label-md font-medium">History</span>
+</a>
+<!-- Settings Tab -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-transform duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span class="font-display text-label-md font-medium">Settings</span>
+</a>
+</nav>
+</body></html>

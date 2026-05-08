@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@400;500;600;700;800&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#191c21",
+                    "inverse-on-surface": "#eff0f8",
+                    "on-tertiary-fixed-variant": "#793100",
+                    "secondary-fixed": "#d3e4fe",
+                    "on-error-container": "#93000a",
+                    "on-tertiary-fixed": "#341100",
+                    "surface-container-low": "#f2f3fb",
+                    "on-secondary-container": "#54647a",
+                    "secondary": "#505f76",
+                    "surface-variant": "#e1e2ea",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#ecedf6",
+                    "primary-container": "#005eb8",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "on-primary-fixed-variant": "#00468c",
+                    "inverse-primary": "#a9c7ff",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "outline": "#727783",
+                    "on-background": "#191c21",
+                    "error": "#ba1a1a",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-container": "#d0e1fb",
+                    "primary": "#00478d",
+                    "surface-bright": "#f9f9ff",
+                    "on-surface-variant": "#424752",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed": "#ffdbcb",
+                    "on-primary-fixed": "#001b3d",
+                    "tertiary-fixed-dim": "#ffb691",
+                    "surface-tint": "#005db6",
+                    "on-tertiary-container": "#ffcfb9",
+                    "surface-dim": "#d8dae2",
+                    "primary-fixed": "#d6e3ff",
+                    "outline-variant": "#c2c6d4",
+                    "primary-fixed-dim": "#a9c7ff",
+                    "on-primary-container": "#c8daff",
+                    "tertiary": "#793100",
+                    "inverse-surface": "#2e3037",
+                    "surface": "#f9f9ff",
+                    "tertiary-container": "#9f4300",
+                    "background": "#f9f9ff",
+                    "surface-container-highest": "#e1e2ea",
+                    "error-container": "#ffdad6",
+                    "surface-container-high": "#e7e8f0",
+                    "on-secondary-fixed": "#0b1c30",
+                    "on-tertiary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "lg": "24px",
+                    "gutter": "12px",
+                    "xl": "32px",
+                    "md": "16px",
+                    "base": "4px",
+                    "sm": "8px",
+                    "xs": "4px",
+                    "container_margin": "16px"
+            },
+            "fontFamily": {
+                    "display": ["Geist"],
+                    "code-sm": ["JetBrains Mono"],
+                    "headline-md": ["Geist"],
+                    "body-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Geist"]
+            },
+            "fontSize": {
+                    "display": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "code-sm": ["13px", {"lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            user-select: none;
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface docked full-width top-0 z-40 border-b border-outline-variant flex items-center justify-between px-container_margin h-16 w-full fixed">
+<div class="flex items-center gap-md">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-primary/8 transition-colors duration-200 active:bg-secondary-container/10">
+<span class="material-symbols-outlined text-on-surface-variant">menu</span>
+</button>
+<h1 class="font-display text-headline-md font-bold text-primary">FTP Server</h1>
+</div>
+<div class="flex items-center gap-sm">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-primary/8 transition-colors duration-200 active:bg-secondary-container/10">
+<span class="material-symbols-outlined text-on-surface-variant">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow pt-16 pb-20 px-container_margin">
+<!-- Search Bar -->
+<div class="mt-md mb-lg">
+<div class="relative flex items-center bg-surface-container-lowest border border-outline-variant rounded-xl px-md py-sm shadow-sm">
+<span class="material-symbols-outlined text-on-surface-variant mr-sm">search</span>
+<input class="w-full bg-transparent border-none focus:ring-0 text-body-md text-on-surface placeholder:text-outline p-0" placeholder="Search local files..." type="text"/>
+<span class="material-symbols-outlined text-on-surface-variant ml-sm">filter_list</span>
+</div>
+</div>
+<!-- Directory Path & Storage Info -->
+<div class="flex flex-col gap-sm mb-lg">
+<div class="flex items-center justify-between">
+<h2 class="font-display text-label-md text-primary-container font-semibold uppercase tracking-wider">Storage Path</h2>
+<span class="font-display text-label-md text-on-surface-variant">42.5 GB / 128 GB Used</span>
+</div>
+<div class="flex items-center gap-xs overflow-x-auto whitespace-nowrap py-base scrollbar-hide">
+<span class="text-primary font-medium text-body-md">Internal Storage</span>
+<span class="material-symbols-outlined text-outline-variant text-[18px]">chevron_right</span>
+<span class="text-on-surface-variant text-body-md">Local</span>
+<span class="material-symbols-outlined text-outline-variant text-[18px]">chevron_right</span>
+<span class="text-on-surface-variant text-body-md">Media</span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full h-1 bg-surface-container-high rounded-full overflow-hidden">
+<div class="bg-primary-container h-full w-[33%]"></div>
+</div>
+</div>
+<!-- Files List -->
+<div class="flex flex-col gap-base">
+<!-- Folder Item: Images -->
+<div class="flex items-center p-md bg-surface-container-lowest border border-outline-variant rounded-lg hover:bg-primary/8 transition-colors duration-200 active:bg-secondary-container/10">
+<div class="w-10 h-10 bg-secondary-container/30 flex items-center justify-center rounded-lg mr-md">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">folder</span>
+</div>
+<div class="flex-grow flex flex-col min-w-0">
+<span class="font-medium text-on-surface truncate">Images</span>
+<div class="flex items-center gap-sm text-label-md text-on-surface-variant">
+<span>342 items</span>
+<span class="w-1 h-1 bg-outline-variant rounded-full"></span>
+<span>May 12, 2024</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">more_vert</span>
+</div>
+<!-- Folder Item: Videos -->
+<div class="flex items-center p-md bg-surface-container-lowest border border-outline-variant rounded-lg hover:bg-primary/8 transition-colors duration-200 active:bg-secondary-container/10">
+<div class="w-10 h-10 bg-secondary-container/30 flex items-center justify-center rounded-lg mr-md">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">folder</span>
+</div>
+<div class="flex-grow flex flex-col min-w-0">
+<span class="font-medium text-on-surface truncate">Videos</span>
+<div class="flex items-center gap-sm text-label-md text-on-surface-variant">
+<span>18 items</span>
+<span class="w-1 h-1 bg-outline-variant rounded-full"></span>
+<span>May 10, 2024</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">more_vert</span>
+</div>
+<!-- Folder Item: Downloads -->
+<div class="flex items-center p-md bg-surface-container-lowest border border-outline-variant rounded-lg hover:bg-primary/8 transition-colors duration-200 active:bg-secondary-container/10">
+<div class="w-10 h-10 bg-secondary-container/30 flex items-center justify-center rounded-lg mr-md">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">download_for_offline</span>
+</div>
+<div class="flex-grow flex flex-col min-w-0">
+<span class="font-medium text-on-surface truncate">Downloads</span>
+<div class="flex items-center gap-sm text-label-md text-on-surface-variant">
+<span>1.2 GB</span>
+<span class="w-1 h-1 bg-outline-variant rounded-full"></span>
+<span>Today, 14:32</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">more_vert</span>
+</div>
+<!-- Section Header: Recent Files -->
+<h3 class="font-display text-label-md text-on-surface-variant font-semibold mt-lg mb-sm px-base">RECENT FILES</h3>
+<!-- File Item: Document -->
+<div class="flex items-center p-md bg-surface-container-lowest border border-outline-variant rounded-lg hover:bg-primary/8 transition-colors duration-200 active:bg-secondary-container/10">
+<div class="w-10 h-10 bg-surface-container-high flex items-center justify-center rounded-lg mr-md">
+<span class="material-symbols-outlined text-secondary">description</span>
+</div>
+<div class="flex-grow flex flex-col min-w-0">
+<span class="font-medium text-on-surface truncate">Project_Specs.pdf</span>
+<div class="flex items-center gap-sm text-label-md text-on-surface-variant">
+<span>4.5 MB</span>
+<span class="w-1 h-1 bg-outline-variant rounded-full"></span>
+<span>2 hours ago</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">more_vert</span>
+</div>
+<!-- File Item: Image -->
+<div class="flex items-center p-md bg-surface-container-lowest border border-outline-variant rounded-lg hover:bg-primary/8 transition-colors duration-200 active:bg-secondary-container/10">
+<div class="w-10 h-10 bg-surface-container-high overflow-hidden flex items-center justify-center rounded-lg mr-md">
+<img alt="Thumbnail" class="w-full h-full object-cover" data-alt="A professional, high-resolution close-up photograph of a modern glass skyscraper reflecting a clear blue sky during sunset. The image has a clean, light-mode corporate aesthetic with soft orange and blue gradients in the reflection. The overall mood is architectural, precise, and tech-forward, matching a utility application theme with high clarity and minimalist composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrkVupu_54PbIS8P9eUOk0vEvfTG_u-zWQ6sKPgn-hZi22-MSmAlPnEjLHcJV8WnEQUDhUWi8CCc3x8Tgu6_kZ4gx__3zTCZnKQsRHGLY8QddV2ZRMr4LLVaEUvFKvuM2w5Zi_PsbFpQ823H_Ti3mxbI4zjMTFfQxBy3EerZg083imzv02Anq3Qh_zkUThGjHgPma6iofKJ_yG-_CSfXpgPwPo1P6quRmGiQuQjZFm1YlH0TFfrF83htJebtDXh_-ohcQyNQhw9QE"/>
+</div>
+<div class="flex-grow flex flex-col min-w-0">
+<span class="font-medium text-on-surface truncate">IMG_20240515.jpg</span>
+<div class="flex items-center gap-sm text-label-md text-on-surface-variant">
+<span>2.1 MB</span>
+<span class="w-1 h-1 bg-outline-variant rounded-full"></span>
+<span>Yesterday</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">more_vert</span>
+</div>
+<!-- File Item: Zip -->
+<div class="flex items-center p-md bg-surface-container-lowest border border-outline-variant rounded-lg hover:bg-primary/8 transition-colors duration-200 active:bg-secondary-container/10">
+<div class="w-10 h-10 bg-surface-container-high flex items-center justify-center rounded-lg mr-md">
+<span class="material-symbols-outlined text-secondary">folder_zip</span>
+</div>
+<div class="flex-grow flex flex-col min-w-0">
+<span class="font-medium text-on-surface truncate">Backup_May.zip</span>
+<div class="flex items-center gap-sm text-label-md text-on-surface-variant">
+<span>256 MB</span>
+<span class="w-1 h-1 bg-outline-variant rounded-full"></span>
+<span>May 15, 2024</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline-variant">more_vert</span>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-outline-variant shadow-sm bg-surface-container-lowest h-20 px-gutter flex justify-around items-center">
+<!-- Connection Tab -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-transform duration-150 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">settings_remote</span>
+<span class="font-display text-label-md font-medium group-hover:text-primary">Connection</span>
+</a>
+<!-- Files Tab (Active) -->
+<a class="flex flex-col items-center justify-center text-primary bg-primary-container/20 rounded-full px-4 py-1 active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">folder</span>
+<span class="font-display text-label-md font-medium">Files</span>
+</a>
+<!-- History Tab -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-transform duration-150 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">history</span>
+<span class="font-display text-label-md font-medium group-hover:text-primary">History</span>
+</a>
+<!-- Settings Tab -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-transform duration-150 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">tune</span>
+<span class="font-display text-label-md font-medium group-hover:text-primary">Settings</span>
+</a>
+</nav>
+<!-- Floating Action Button - Supressed as per Task Logic (File Manager focused view) -->
+<!-- But if needed for "Add/Upload" context: -->
+<button class="fixed right-md bottom-[100px] w-14 h-14 bg-primary-container text-on-primary rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">add</span>
+</button>
+</body></html>

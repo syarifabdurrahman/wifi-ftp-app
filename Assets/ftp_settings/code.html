@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FTP Server Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Geist:wght@400;500;600;700&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #F8FAFC;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#191c21",
+                        "inverse-on-surface": "#eff0f8",
+                        "on-tertiary-fixed-variant": "#793100",
+                        "secondary-fixed": "#d3e4fe",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#341100",
+                        "surface-container-low": "#f2f3fb",
+                        "on-secondary-container": "#54647a",
+                        "secondary": "#505f76",
+                        "surface-variant": "#e1e2ea",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#ecedf6",
+                        "primary-container": "#005eb8",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "on-primary-fixed-variant": "#00468c",
+                        "inverse-primary": "#a9c7ff",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "outline": "#727783",
+                        "on-background": "#191c21",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#d0e1fb",
+                        "primary": "#00478d",
+                        "surface-bright": "#f9f9ff",
+                        "on-surface-variant": "#424752",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#ffdbcb",
+                        "on-primary-fixed": "#001b3d",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "surface-tint": "#005db6",
+                        "on-tertiary-container": "#ffcfb9",
+                        "surface-dim": "#d8dae2",
+                        "primary-fixed": "#d6e3ff",
+                        "outline-variant": "#c2c6d4",
+                        "primary-fixed-dim": "#a9c7ff",
+                        "on-primary-container": "#c8daff",
+                        "tertiary": "#793100",
+                        "inverse-surface": "#2e3037",
+                        "surface": "#f9f9ff",
+                        "tertiary-container": "#9f4300",
+                        "background": "#f9f9ff",
+                        "surface-container-highest": "#e1e2ea",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#e7e8f0",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "gutter": "12px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "container_margin": "16px"
+                    },
+                    "fontFamily": {
+                        "display": ["Geist"],
+                        "code-sm": ["JetBrains Mono"],
+                        "headline-md": ["Geist"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Geist"]
+                    },
+                    "fontSize": {
+                        "display": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "code-sm": ["13px", {"lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-on-background docked full-width top-0 border-b border-outline-variant dark:border-on-surface-variant flex items-center justify-between px-container_margin h-16 w-full fixed z-40">
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant dark:text-surface-variant hover:bg-primary/8 dark:hover:bg-primary-fixed/8 p-2 rounded-full transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-display text-headline-md font-bold text-primary dark:text-primary-fixed">FTP Server</h1>
+</div>
+<button class="text-on-surface-variant dark:text-surface-variant hover:bg-primary/8 dark:hover:bg-primary-fixed/8 p-2 rounded-full transition-colors duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</header>
+<main class="pt-20 pb-24 px-container_margin max-w-2xl mx-auto">
+<!-- Page Title -->
+<div class="mb-lg">
+<h2 class="font-display text-headline-md text-on-surface">Settings</h2>
+<p class="text-on-surface-variant font-body-md">Configure your server behavior and security.</p>
+</div>
+<!-- Connection Group -->
+<section class="space-y-sm mb-xl">
+<h3 class="font-label-md text-primary px-base uppercase tracking-wider">Network Configuration</h3>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+<!-- Port Number -->
+<div class="flex items-center justify-between p-md hover:bg-primary/5 transition-colors cursor-pointer group border-b border-outline-variant/50">
+<div class="flex gap-md items-center">
+<span class="material-symbols-outlined text-secondary" data-icon="settings_ethernet">settings_ethernet</span>
+<div>
+<p class="font-body-lg text-on-surface font-medium">Port Number</p>
+<p class="text-label-md text-on-surface-variant">The port the FTP server listens on</p>
+</div>
+</div>
+<span class="font-code-sm text-primary px-sm py-xs bg-primary-container/10 rounded">2121</span>
+</div>
+<!-- Root Folder -->
+<div class="flex items-center justify-between p-md hover:bg-primary/5 transition-colors cursor-pointer group">
+<div class="flex gap-md items-center">
+<span class="material-symbols-outlined text-secondary" data-icon="folder_open">folder_open</span>
+<div>
+<p class="font-body-lg text-on-surface font-medium">Root Folder</p>
+<p class="text-label-md text-on-surface-variant">/storage/emulated/0/FTP_Share</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- Security Group -->
+<section class="space-y-sm mb-xl">
+<h3 class="font-label-md text-primary px-base uppercase tracking-wider">Security &amp; Access</h3>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+<!-- Anonymous Access -->
+<div class="flex items-center justify-between p-md border-b border-outline-variant/50">
+<div class="flex gap-md items-center">
+<span class="material-symbols-outlined text-secondary" data-icon="person_off">person_off</span>
+<div>
+<p class="font-body-lg text-on-surface font-medium">Anonymous Access</p>
+<p class="text-label-md text-on-surface-variant">Allow logins without credentials</p>
+</div>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</div>
+<!-- Username Setup -->
+<div class="p-md border-b border-outline-variant/50">
+<label class="block mb-xs font-label-md text-secondary">FTP Username</label>
+<div class="relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-sm text-outline">
+<span class="material-symbols-outlined text-[20px]" data-icon="person">person</span>
+</span>
+<input class="w-full bg-surface border border-outline-variant rounded px-xl py-sm font-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" type="text" value="admin_user"/>
+</div>
+</div>
+<!-- Password Setup -->
+<div class="p-md">
+<label class="block mb-xs font-label-md text-secondary">FTP Password</label>
+<div class="relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-sm text-outline">
+<span class="material-symbols-outlined text-[20px]" data-icon="lock">lock</span>
+</span>
+<input class="w-full bg-surface border border-outline-variant rounded px-xl py-sm font-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" type="password" value="••••••••••••"/>
+<span class="absolute inset-y-0 right-0 flex items-center pr-sm text-outline cursor-pointer hover:text-primary">
+<span class="material-symbols-outlined text-[20px]" data-icon="visibility">visibility</span>
+</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Advanced Group -->
+<section class="space-y-sm mb-xl">
+<h3 class="font-label-md text-primary px-base uppercase tracking-wider">Advanced</h3>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+<!-- Keep Screen On -->
+<div class="flex items-center justify-between p-md">
+<div class="flex gap-md items-center">
+<span class="material-symbols-outlined text-secondary" data-icon="light_mode">light_mode</span>
+<div>
+<p class="font-body-lg text-on-surface font-medium">Keep Screen On</p>
+<p class="text-label-md text-on-surface-variant">Prevent sleep while server is active</p>
+</div>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Info Card -->
+<div class="bg-primary-container/10 border border-primary/20 rounded-xl p-md flex gap-md items-start">
+<span class="material-symbols-outlined text-primary mt-1" data-icon="info">info</span>
+<div class="font-body-md text-primary">
+                Changes to Port and Security settings will require a server restart to take effect.
+            </div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-outline-variant dark:border-on-surface-variant shadow-sm dark:shadow-none bg-surface-container-lowest dark:bg-inverse-surface flex justify-around items-center h-20 px-gutter">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="settings_remote">settings_remote</span>
+<span class="font-display text-label-md font-medium">Connection</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="folder">folder</span>
+<span class="font-display text-label-md font-medium">Files</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-display text-label-md font-medium">History</span>
+</button>
+<button class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed bg-primary-container/20 dark:bg-primary-container/40 rounded-full px-4 py-1 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="tune" data-weight="fill" style="font-variation-settings: 'FILL' 1;">tune</span>
+<span class="font-display text-label-md font-medium">Settings</span>
+</button>
+</nav>
+</body></html>
