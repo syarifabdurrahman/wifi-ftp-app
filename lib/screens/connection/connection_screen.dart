@@ -73,25 +73,13 @@ class ConnectionScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Status & Connections Stats
-                  Row(
-                    children: [
-                      _buildQuickStat(
-                        context,
-                        title: 'Status',
-                        value: isRunning ? 'Online' : 'Offline',
-                        color: statusColor,
-                        icon: isRunning ? Icons.cloud_done : Icons.cloud_off,
-                      ),
-                      const SizedBox(width: 12),
-                      _buildQuickStat(
-                        context,
-                        title: 'Active Users',
-                        value: '${ftpProvider.activeConnections}',
-                        color: Theme.of(context).colorScheme.secondary,
-                        icon: Icons.people_outline,
-                      ),
-                    ],
+                  // Status Stat
+                  _buildQuickStat(
+                    context,
+                    title: 'Status',
+                    value: isRunning ? 'Online' : 'Offline',
+                    color: statusColor,
+                    icon: isRunning ? Icons.cloud_done : Icons.cloud_off,
                   ),
                   const SizedBox(height: 24),
                   
@@ -286,40 +274,38 @@ class ConnectionScreen extends StatelessWidget {
     required Color color,
     required IconData icon,
   }) {
-    return Expanded(
-      child: GlassContainer(
-        padding: const EdgeInsets.all(16),
-        opacity: 0.05,
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 20),
+    return GlassContainer(
+      padding: const EdgeInsets.all(16),
+      opacity: 0.05,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10),
+                ),
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  Text(
-                    value,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
