@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:network_info_plus/network_info_plus.dart';
-import 'package:wifi_ftp_app/services/background_service.dart';
+import 'package:quick_wifi_share/services/background_service.dart';
 
 class FtpProvider with ChangeNotifier {
   bool _isRunning = false;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:wifi_ftp_app/helpers/ad_helper.dart';
-import 'package:wifi_ftp_app/widgets/glass_container.dart';
+import 'package:quick_wifi_share/helpers/ad_helper.dart';
+import 'package:quick_wifi_share/widgets/glass_container.dart';
 
 class NativeAdCard extends StatefulWidget {
   const NativeAdCard({super.key});

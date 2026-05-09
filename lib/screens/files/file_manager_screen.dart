@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:wifi_ftp_app/providers/file_provider.dart';
-import 'package:wifi_ftp_app/theme/app_theme.dart';
+import 'package:quick_wifi_share/providers/file_provider.dart';
+import 'package:quick_wifi_share/theme/app_theme.dart';
 import 'package:path/path.dart' as p;
 
 class FileManagerScreen extends StatefulWidget {

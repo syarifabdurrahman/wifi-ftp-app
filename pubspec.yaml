@@ -1,8 +1,8 @@
-name: wifi_ftp_app
-description: "A new Flutter project."
+name: quick_wifi_share
+description: "Quick and secure WiFi FTP file sharing application."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0
 
 environment:
   sdk: ^3.11.0

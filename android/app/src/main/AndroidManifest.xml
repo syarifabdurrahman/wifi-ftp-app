@@ -11,7 +11,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
 
     <application
-        android:label="wifi_ftp_app"
+        android:label="Quick WiFi Share"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

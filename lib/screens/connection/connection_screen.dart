@@ -4,14 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:wifi_ftp_app/providers/file_provider.dart';
-import 'package:wifi_ftp_app/providers/ftp_provider.dart';
-import 'package:wifi_ftp_app/providers/settings_provider.dart';
-import 'package:wifi_ftp_app/theme/app_theme.dart';
-import 'package:wifi_ftp_app/widgets/animated_mesh_background.dart';
-import 'package:wifi_ftp_app/widgets/glass_container.dart';
-import 'package:wifi_ftp_app/widgets/native_ad_card.dart';
-import 'package:wifi_ftp_app/widgets/pulse_animation.dart';
+import 'package:quick_wifi_share/providers/file_provider.dart';
+import 'package:quick_wifi_share/providers/ftp_provider.dart';
+import 'package:quick_wifi_share/providers/settings_provider.dart';
+import 'package:quick_wifi_share/theme/app_theme.dart';
+import 'package:quick_wifi_share/widgets/animated_mesh_background.dart';
+import 'package:quick_wifi_share/widgets/glass_container.dart';
+import 'package:quick_wifi_share/widgets/native_ad_card.dart';
+import 'package:quick_wifi_share/widgets/pulse_animation.dart';
 
 class ConnectionScreen extends StatelessWidget {
   const ConnectionScreen({super.key});

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:wifi_ftp_app/helpers/ad_helper.dart';
-import 'package:wifi_ftp_app/providers/file_provider.dart';
-import 'package:wifi_ftp_app/providers/ftp_provider.dart';
-import 'package:wifi_ftp_app/providers/settings_provider.dart';
-import 'package:wifi_ftp_app/screens/main_navigation_screen.dart';
-import 'package:wifi_ftp_app/services/background_service.dart';
-import 'package:wifi_ftp_app/theme/app_theme.dart';
+import 'package:quick_wifi_share/helpers/ad_helper.dart';
+import 'package:quick_wifi_share/providers/file_provider.dart';
+import 'package:quick_wifi_share/providers/ftp_provider.dart';
+import 'package:quick_wifi_share/providers/settings_provider.dart';
+import 'package:quick_wifi_share/screens/main_navigation_screen.dart';
+import 'package:quick_wifi_share/services/background_service.dart';
+import 'package:quick_wifi_share/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

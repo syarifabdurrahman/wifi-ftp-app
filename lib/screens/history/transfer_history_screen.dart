@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:wifi_ftp_app/providers/ftp_provider.dart';
-import 'package:wifi_ftp_app/theme/app_theme.dart';
+import 'package:quick_wifi_share/providers/ftp_provider.dart';
+import 'package:quick_wifi_share/theme/app_theme.dart';
 
 class TransferHistoryScreen extends StatelessWidget {
   const TransferHistoryScreen({super.key});

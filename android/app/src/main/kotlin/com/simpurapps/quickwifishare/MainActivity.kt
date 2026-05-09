@@ -1,4 +1,4 @@
-package com.example.wifi_ftp_app
+package com.simpurapps.quickwifishare
 
 import io.flutter.embedding.android.FlutterActivity
 
