@@ -63,10 +63,10 @@ class AppTheme {
     
     final ColorScheme colorScheme = ColorScheme(
       brightness: brightness,
-      primary: primary,
-      onPrimary: onPrimary,
-      primaryContainer: isDark ? const Color(0xFF003062) : primaryContainer,
-      onPrimaryContainer: isDark ? const Color(0xFFD6E3FF) : onPrimaryContainer,
+      primary: isDark ? const Color(0xFF6E9BFF) : primary,
+      onPrimary: isDark ? const Color(0xFF002F64) : onPrimary,
+      primaryContainer: isDark ? const Color(0xFF004494) : (isDark ? const Color(0xFF003062) : primaryContainer),
+      onPrimaryContainer: isDark ? const Color(0xFFD6E3FF) : (isDark ? const Color(0xFFD6E3FF) : onPrimaryContainer),
       secondary: isDark ? const Color(0xFFB9C8DA) : secondary,
       onSecondary: isDark ? const Color(0xFF243240) : onSecondary,
       secondaryContainer: isDark ? const Color(0xFF3A4858) : const Color(0xFFD0E1FB),
@@ -79,12 +79,12 @@ class AppTheme {
       onError: onError,
       errorContainer: errorContainer,
       onErrorContainer: onErrorContainer,
-      surface: isDark ? const Color(0xFF111318) : surface,
-      onSurface: isDark ? const Color(0xFFE2E2E9) : onSurface,
-      onSurfaceVariant: isDark ? const Color(0xFFC2C6D4) : onSurfaceVariant,
-      surfaceContainerHighest: isDark ? const Color(0xFF424752) : surfaceContainerHighest,
-      outline: isDark ? const Color(0xFF8C919E) : outline,
-      outlineVariant: isDark ? const Color(0xFF424752) : outlineVariant,
+      surface: isDark ? const Color(0xFF0B0E14) : surface,
+      onSurface: isDark ? const Color(0xFFE2E2E6) : onSurface,
+      onSurfaceVariant: isDark ? const Color(0xFFC4C6D0) : onSurfaceVariant,
+      surfaceContainerHighest: isDark ? const Color(0xFF1A1C1E) : surfaceContainerHighest,
+      outline: isDark ? const Color(0xFF8E9099) : outline,
+      outlineVariant: isDark ? const Color(0xFF44474F) : outlineVariant,
     );
 
     return ThemeData(
