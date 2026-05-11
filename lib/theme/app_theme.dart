@@ -40,9 +40,9 @@ class AppTheme {
 
   // Dynamic helpers
   static Color getCardColor(BuildContext context) {
-    return Theme.of(context).cardTheme.color ?? 
-           (Theme.of(context).brightness == Brightness.dark 
-            ? const Color(0xFF1E2025) 
+    return Theme.of(context).cardTheme.color ??
+        (Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1E2025)
             : surfaceContainerLowest);
   }
 
@@ -60,21 +60,31 @@ class AppTheme {
 
   static ThemeData _buildTheme(Brightness brightness) {
     final bool isDark = brightness == Brightness.dark;
-    
+
     final ColorScheme colorScheme = ColorScheme(
       brightness: brightness,
       primary: isDark ? const Color(0xFF6E9BFF) : primary,
       onPrimary: isDark ? const Color(0xFF002F64) : onPrimary,
-      primaryContainer: isDark ? const Color(0xFF004494) : (isDark ? const Color(0xFF003062) : primaryContainer),
-      onPrimaryContainer: isDark ? const Color(0xFFD6E3FF) : (isDark ? const Color(0xFFD6E3FF) : onPrimaryContainer),
+      primaryContainer: isDark
+          ? const Color(0xFF004494)
+          : (isDark ? const Color(0xFF003062) : primaryContainer),
+      onPrimaryContainer: isDark
+          ? const Color(0xFFD6E3FF)
+          : (isDark ? const Color(0xFFD6E3FF) : onPrimaryContainer),
       secondary: isDark ? const Color(0xFFB9C8DA) : secondary,
       onSecondary: isDark ? const Color(0xFF243240) : onSecondary,
-      secondaryContainer: isDark ? const Color(0xFF3A4858) : const Color(0xFFD0E1FB),
-      onSecondaryContainer: isDark ? const Color(0xFFD6E4F7) : onSecondaryContainer,
+      secondaryContainer: isDark
+          ? const Color(0xFF3A4858)
+          : const Color(0xFFD0E1FB),
+      onSecondaryContainer: isDark
+          ? const Color(0xFFD6E4F7)
+          : onSecondaryContainer,
       tertiary: isDark ? const Color(0xFFFFB591) : tertiary,
       onTertiary: isDark ? const Color(0xFF551E00) : onTertiary,
       tertiaryContainer: isDark ? const Color(0xFF793100) : tertiaryContainer,
-      onTertiaryContainer: isDark ? const Color(0xFFFFDBCA) : onTertiaryContainer,
+      onTertiaryContainer: isDark
+          ? const Color(0xFFFFDBCA)
+          : onTertiaryContainer,
       error: error,
       onError: onError,
       errorContainer: errorContainer,
@@ -82,7 +92,9 @@ class AppTheme {
       surface: isDark ? const Color(0xFF0B0E14) : surface,
       onSurface: isDark ? const Color(0xFFE2E2E6) : onSurface,
       onSurfaceVariant: isDark ? const Color(0xFFC4C6D0) : onSurfaceVariant,
-      surfaceContainerHighest: isDark ? const Color(0xFF1A1C1E) : surfaceContainerHighest,
+      surfaceContainerHighest: isDark
+          ? const Color(0xFF1A1C1E)
+          : surfaceContainerHighest,
       outline: isDark ? const Color(0xFF8E9099) : outline,
       outlineVariant: isDark ? const Color(0xFF44474F) : outlineVariant,
     );
@@ -104,7 +116,9 @@ class AppTheme {
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: isDark ? const Color(0xFF1A1C1E) : surfaceContainerLowest,
+        backgroundColor: isDark
+            ? const Color(0xFF1A1C1E)
+            : surfaceContainerLowest,
         selectedItemColor: colorScheme.primary,
         unselectedItemColor: colorScheme.onSurfaceVariant,
         type: BottomNavigationBarType.fixed,
@@ -116,7 +130,9 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.2 : 0.5),
+            color: colorScheme.outlineVariant.withValues(
+              alpha: isDark ? 0.2 : 0.5,
+            ),
           ),
         ),
       ),
@@ -124,8 +140,10 @@ class AppTheme {
   }
 
   static TextTheme _textTheme(bool isDark) {
-    final Color textColor = isDark ? const Color(0xFFE2E2E9) : const Color(0xFF191C21);
-    
+    final Color textColor = isDark
+        ? const Color(0xFFE2E2E9)
+        : const Color(0xFF191C21);
+
     return TextTheme(
       displayLarge: GoogleFonts.inter(
         fontSize: 30,
