@@ -36,6 +36,9 @@ iCON512x512.png
 
 # Symbolication related
 app.*.symbols
+*.keystore
+*.jks
+key.properties
 
 # Obfuscation related
 app.*.map.json
