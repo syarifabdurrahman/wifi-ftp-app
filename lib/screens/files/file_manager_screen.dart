@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quick_wifi_share/providers/file_provider.dart';
+import 'package:quick_wifi_share/providers/settings_provider.dart';
+import 'package:quick_wifi_share/screens/files/media_preview_screen.dart';
 import 'package:quick_wifi_share/theme/app_theme.dart';
 import 'package:path/path.dart' as p;
 
@@ -15,6 +17,15 @@ class FileManagerScreen extends StatefulWidget {
 class _FileManagerScreenState extends State<FileManagerScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final rootFolder = context.read<SettingsProvider>().rootFolder;
+      context.read<FileProvider>().setPath(rootFolder);
+    });
+  }
 
   @override
   void dispose() {
@@ -44,7 +55,13 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
         title: const Text('File Explorer'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.create_new_folder_rounded),
+            tooltip: 'New Folder',
+            onPressed: () => _showCreateFolderDialog(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh',
             onPressed: () => context.read<FileProvider>().refresh(),
           ),
         ],
@@ -120,13 +137,41 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                     // Breadcrumbs style path
                     Row(
                       children: [
-                        Icon(Icons.folder_open, size: 18, color: Theme.of(context).colorScheme.secondary),
-                        const SizedBox(width: 8),
+                        // Clickable Home/Root Button
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () {
+                              final rootPath = context.read<SettingsProvider>().rootFolder;
+                              fileProvider.setPath(rootPath);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.home_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Root',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.chevron_right_rounded, size: 16, color: Theme.of(context).colorScheme.outlineVariant),
                         Expanded(
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Text(
-                              fileProvider.currentPath.replaceFirst('/storage/emulated/0', 'Root'),
+                              fileProvider.currentPath == context.read<SettingsProvider>().rootFolder
+                                  ? ' (Home)'
+                                  : fileProvider.currentPath.replaceFirst(context.read<SettingsProvider>().rootFolder, ''),
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
@@ -136,6 +181,12 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                         ),
                       ],
                     ),
+
+                    // Persistent "Go Up" card
+                    if (fileProvider.currentPath != context.read<SettingsProvider>().rootFolder && _searchQuery.isEmpty) ...[
+                      const SizedBox(height: 12),
+                      _buildParentFolderCard(context, fileProvider),
+                    ],
                   ],
                 ),
               ),
@@ -148,28 +199,12 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                         ? _buildEmptyState(context)
                         : ListView.separated(
                             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                            itemCount: filteredFiles.length + (fileProvider.currentPath == '/storage/emulated/0' || _searchQuery.isNotEmpty ? 0 : 1),
+                            itemCount: filteredFiles.length,
                             separatorBuilder: (context, index) => const SizedBox(height: 8),
                             itemBuilder: (context, index) {
-                              // Handle "Go Up" item
-                              if (fileProvider.currentPath != '/storage/emulated/0' && _searchQuery.isEmpty && index == 0) {
-                                return _buildFolderItem(
-                                  context,
-                                  onTap: () {
-                                    final parentPath = p.dirname(fileProvider.currentPath);
-                                    fileProvider.setPath(parentPath);
-                                  },
-                                  icon: Icons.keyboard_return,
-                                  name: '.. (Up)',
-                                  subtitle: 'Go to parent folder',
-                                  color: Theme.of(context).colorScheme.outline,
-                                );
-                              }
-
-                              final itemIndex = (fileProvider.currentPath == '/storage/emulated/0' || _searchQuery.isNotEmpty) ? index : index - 1;
-                              final fileEntity = filteredFiles[itemIndex];
+                              final fileEntity = filteredFiles[index];
                               final isDirectory = fileEntity is Directory;
-                              
+
                               // Use safe stat access
                               FileStat stat;
                               try {
@@ -186,6 +221,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                                     _searchController.clear();
                                     _searchQuery = '';
                                   },
+                                  onDelete: () => _confirmDelete(context, fileProvider, fileEntity),
                                   icon: Icons.folder_rounded,
                                   name: p.basename(fileEntity.path),
                                   subtitle: 'Folder • ${_formatDate(stat.modified)}',
@@ -198,6 +234,8 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                                   size: _formatBytes(stat.size),
                                   date: _formatDate(stat.modified),
                                   extension: p.extension(fileEntity.path).replaceAll('.', '').toUpperCase(),
+                                  path: fileEntity.path,
+                                  onDelete: () => _confirmDelete(context, fileProvider, fileEntity),
                                 );
                               }
                             },
@@ -226,9 +264,164 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     );
   }
 
+  Widget _buildParentFolderCard(BuildContext context, FileProvider fileProvider) {
+    final parentPath = p.dirname(fileProvider.currentPath);
+    final parentName = p.basename(parentPath);
+
+    return InkWell(
+      onTap: () {
+        fileProvider.setPath(parentPath);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Parent Folder',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  Text(
+                    'Go back to ${parentName.isEmpty || parentName == '0' ? 'Root' : parentName}',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.keyboard_return_rounded, size: 18, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, FileProvider fileProvider, FileSystemEntity entity) {
+    final name = p.basename(entity.path);
+    final isFolder = entity is Directory;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.error),
+              const SizedBox(width: 8),
+              const Text('Confirm Delete'),
+            ],
+          ),
+          content: Text('Are you sure you want to permanently delete the ${isFolder ? 'folder' : 'file'} "$name"? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context); // Close dialog
+                final success = await fileProvider.deleteEntity(entity);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success ? 'Successfully deleted "$name"' : 'Failed to delete "$name"'),
+                      backgroundColor: success ? Colors.green : Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showCreateFolderDialog(BuildContext context) {
+    final controller = TextEditingController();
+    final fileProvider = context.read<FileProvider>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.folder_open_rounded, color: Color(0xFF005EB8)),
+              SizedBox(width: 8),
+              Text('Create New Folder'),
+            ],
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Enter folder name...',
+              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+              isDense: true,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final folderName = controller.text.trim();
+                if (folderName.isEmpty) return;
+
+                Navigator.pop(context);
+                final success = await fileProvider.createFolder(folderName);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success ? 'Successfully created folder "$folderName"' : 'Failed to create folder "$folderName" (already exists or permission denied)'),
+                      backgroundColor: success ? Colors.green : Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildFolderItem(
     BuildContext context, {
     required VoidCallback onTap,
+    required VoidCallback onDelete,
     required IconData icon,
     required String name,
     required String subtitle,
@@ -263,20 +456,45 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                   Text(
                     name,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                          fontWeight: FontWeight.w600,
+                        ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'delete') {
+                      onDelete();
+                    }
+                  },
+                  icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.outlineVariant),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                          SizedBox(width: 8),
+                          Text('Delete', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant),
+              ],
+            ),
           ],
         ),
       ),
@@ -289,6 +507,8 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     required String size,
     required String date,
     required String extension,
+    required String path,
+    required VoidCallback onDelete,
   }) {
     // Determine color based on extension
     Color extColor = Theme.of(context).colorScheme.secondary;
@@ -308,58 +528,88 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
       icon = Icons.archive_rounded;
     }
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: extColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: extension.length > 3
-                  ? Icon(icon, color: extColor, size: 24)
-                  : Text(
-                      extension,
-                      style: TextStyle(
-                        color: extColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                      ),
-                    ),
-            ),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MediaPreviewScreen(filePath: path),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(context),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: extColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: extension.length > 3
+                    ? Icon(icon, color: extColor, size: 24)
+                    : Text(
+                        extension,
+                        style: TextStyle(
+                          color: extColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  '$size • $date',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  Text(
+                    '$size • $date',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'delete') {
+                  onDelete();
+                }
+              },
+              icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.outlineVariant),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                      SizedBox(width: 8),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-          Icon(Icons.more_vert, color: Theme.of(context).colorScheme.outlineVariant),
-        ],
+          ],
+        ),
       ),
     );
   }

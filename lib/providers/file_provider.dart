@@ -1,6 +1,6 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class FileProvider with ChangeNotifier {
   String _currentPath = '/storage/emulated/0';
@@ -34,6 +34,17 @@ class FileProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Request and check permissions on Android
+      if (Platform.isAndroid) {
+        final status = await Permission.manageExternalStorage.status;
+        if (!status.isGranted) {
+          final req = await Permission.manageExternalStorage.request();
+          if (!req.isGranted) {
+            await Permission.storage.request();
+          }
+        }
+      }
+
       final dir = Directory(_currentPath);
       if (await dir.exists()) {
         _files = await dir.list().toList();
@@ -55,6 +66,38 @@ class FileProvider with ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  // Create a new folder under current directory
+  Future<bool> createFolder(String folderName) async {
+    try {
+      final newDir = Directory('$_currentPath/$folderName');
+      if (!await newDir.exists()) {
+        await newDir.create();
+        await _loadFiles();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error creating folder: $e');
+      return false;
+    }
+  }
+
+  // Delete a file or a folder recursively
+  Future<bool> deleteEntity(FileSystemEntity entity) async {
+    try {
+      if (entity is Directory) {
+        await entity.delete(recursive: true);
+      } else if (entity is File) {
+        await entity.delete();
+      }
+      await _loadFiles();
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting entity: $e');
+      return false;
+    }
   }
 
   // Helper method for the mock storage values

@@ -1,4 +1,4 @@
-package com.simpurapps.quickwifishare
+package com.simpurrapps.quickwifishare
 
 import io.flutter.embedding.android.FlutterActivity
 

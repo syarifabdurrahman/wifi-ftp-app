@@ -4,7 +4,6 @@ import 'package:quick_wifi_share/screens/connection/connection_screen.dart';
 import 'package:quick_wifi_share/screens/files/file_manager_screen.dart';
 import 'package:quick_wifi_share/screens/history/transfer_history_screen.dart';
 import 'package:quick_wifi_share/screens/settings/ftp_settings_screen.dart';
-import 'package:quick_wifi_share/theme/app_theme.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});

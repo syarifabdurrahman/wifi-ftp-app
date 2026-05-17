@@ -67,6 +67,9 @@ class ConnectionScreen extends StatelessWidget {
             final ftpAddress = isRunning
                 ? 'ftp://${ftpProvider.ipAddress}:${settingsProvider.port}'
                 : 'Server offline';
+            final webAddress = isRunning
+                ? 'http://${ftpProvider.ipAddress}:${ftpProvider.webPort}'
+                : 'Server offline';
 
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(16.0, MediaQuery.of(context).padding.top + 56 + 20, 16.0, 20.0),
@@ -96,7 +99,7 @@ class ConnectionScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: QrImageView(
-                              data: ftpAddress,
+                              data: webAddress,
                               version: QrVersions.auto,
                               size: 140.0,
                               dataModuleStyle: const QrDataModuleStyle(
@@ -107,20 +110,73 @@ class ConnectionScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 20),
                         ],
+                        
+                        // Web Share Portal Card
                         Text(
-                          'FTP CONNECTION URL',
+                          'WEB SHARE PORTAL URL',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            letterSpacing: 1.5,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        InkWell(
+                          onTap: () {
+                            if (isRunning) {
+                              Clipboard.setData(ClipboardData(text: webAddress));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Web URL copied to clipboard')),
+                              );
+                              HapticFeedback.selectionClick();
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.language_rounded, color: Theme.of(context).colorScheme.primary, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    webAddress,
+                                    style: AppTheme.codeSmall.copyWith(
+                                      color: isRunning ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.outline,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (isRunning) Icon(Icons.copy, size: 18, color: Theme.of(context).colorScheme.outline),
+                              ],
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 20),
+
+                        // FTP Connection Card
+                        Text(
+                          'FTP CLIENT CONNECTION URL',
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             letterSpacing: 1.5,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         InkWell(
                           onTap: () {
                             if (isRunning) {
                               Clipboard.setData(ClipboardData(text: ftpAddress));
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('URL copied to clipboard')),
+                                const SnackBar(content: Text('FTP URL copied to clipboard')),
                               );
                               HapticFeedback.selectionClick();
                             }
@@ -135,7 +191,7 @@ class ConnectionScreen extends StatelessWidget {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.link, color: statusColor, size: 20),
+                                Icon(Icons.settings_ethernet_rounded, color: statusColor, size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(

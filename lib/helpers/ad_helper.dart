@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdHelper {
-  static const String _testAdUnitIdAndroid = 'ca-app-pub-3940256099942544/2247696110';
-  static const String _testAdUnitIdIOS = 'ca-app-pub-3940256099942544/3986624511';
+  static const String _adUnitIdAndroid = 'ca-app-pub-8500075420783419/7744204780';
+  static const String _adUnitIdIOS = 'ca-app-pub-3940256099942544/3986624511';
 
   static String get adUnitId {
     if (Platform.isAndroid) {
-      return _testAdUnitIdAndroid;
+      return _adUnitIdAndroid;
     } else if (Platform.isIOS) {
-      return _testAdUnitIdIOS;
+      return _adUnitIdIOS;
     }
     return '';
   }

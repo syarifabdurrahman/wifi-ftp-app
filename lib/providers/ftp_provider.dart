@@ -7,6 +7,7 @@ class FtpProvider with ChangeNotifier {
   bool _isRunning = false;
   bool _isStarting = false;
   String _ipAddress = '0.0.0.0';
+  int _webPort = 8080;
   int _totalBytesTransferred = 0;
   final List<String> _logs = [];
   StreamSubscription<Map<String, dynamic>?>? _serviceSubscription;
@@ -14,6 +15,7 @@ class FtpProvider with ChangeNotifier {
   bool get isRunning => _isRunning;
   bool get isStarting => _isStarting;
   String get ipAddress => _ipAddress;
+  int get webPort => _webPort;
   int get totalBytesTransferred => _totalBytesTransferred;
   List<String> get logs => List.unmodifiable(_logs);
 
@@ -71,6 +73,12 @@ class FtpProvider with ChangeNotifier {
       if (event.containsKey('ip') && event['ip'] != null) {
         _ipAddress = event['ip'] as String;
         debugPrint('FtpProvider: ip changed to $_ipAddress');
+        notifyListeners();
+      }
+
+      if (event.containsKey('webPort') && event['webPort'] != null) {
+        _webPort = event['webPort'] as int;
+        debugPrint('FtpProvider: webPort changed to $_webPort');
         notifyListeners();
       }
     });

@@ -7,6 +7,7 @@ import 'package:ftp_server/ftp_server.dart';
 import 'package:ftp_server/server_type.dart';
 import 'package:ftp_server/file_operations/physical_file_operations.dart';
 import 'package:network_info_plus/network_info_plus.dart';
+import 'package:quick_wifi_share/services/web_server_service.dart';
 
 const notificationChannelId = 'ftp_foreground_service';
 const notificationId = 888;
@@ -125,6 +126,7 @@ void _onStart(ServiceInstance service) async {
   debugPrint('Background service _onStart called');
 
   FtpServer? ftpServer;
+  WebServerService? webServer;
   String currentIP = '0.0.0.0';
   int currentPort = 2121;
 
@@ -141,6 +143,9 @@ void _onStart(ServiceInstance service) async {
 
     if (ftpServer != null) {
       await ftpServer!.stop();
+    }
+    if (webServer != null) {
+      await webServer!.stop();
     }
 
     final port = event?['port'] as int? ?? 2121;
@@ -181,14 +186,26 @@ void _onStart(ServiceInstance service) async {
       await ftpServer!.startInBackground();
       debugPrint('FTP server started successfully!');
 
+      // Start the Web Server
+      webServer = WebServerService(
+        rootPath: rootPath,
+        port: 8080,
+        logFunction: (log) {
+          debugPrint('WEB: $log');
+          service.invoke('update', {'message': log});
+        },
+      );
+      await webServer!.start();
+      debugPrint('Web Server started successfully!');
+
       await notifications.show(
         notificationId,
-        'FTP Server Active',
-        'ftp://$currentIP:$currentPort',
+        'WiFi Share Active',
+        'ftp://$currentIP:$currentPort | Web: http://$currentIP:8080',
         const NotificationDetails(
           android: AndroidNotificationDetails(
             notificationChannelId,
-            'FTP Server Service',
+            'WiFi FTP & Web Server Service',
             icon: 'ic_bg_service_small',
             ongoing: true,
             priority: Priority.high,
@@ -208,12 +225,19 @@ void _onStart(ServiceInstance service) async {
         'running': true,
         'ip': currentIP,
         'port': currentPort,
-        'message': 'FTP Server started at ftp://$currentIP:$currentPort',
+        'webPort': 8080,
+        'message': 'Server started!\nFTP: ftp://$currentIP:$currentPort\nWeb: http://$currentIP:8080',
       });
 
     } catch (e, stack) {
-      debugPrint('Error starting FTP server: $e');
+      debugPrint('Error starting FTP or Web server: $e');
       debugPrint('Stack: $stack');
+      if (webServer != null) {
+        try {
+          await webServer!.stop();
+        } catch (_) {}
+        webServer = null;
+      }
       await notifications.cancel(notificationId);
       service.invoke('update', {
         'running': false,
@@ -228,10 +252,14 @@ void _onStart(ServiceInstance service) async {
       await ftpServer!.stop();
       ftpServer = null;
     }
+    if (webServer != null) {
+      await webServer!.stop();
+      webServer = null;
+    }
     await notifications.cancel(notificationId);
     service.invoke('update', {
       'running': false,
-      'message': 'FTP Server stopped',
+      'message': 'FTP and Web Servers stopped',
     });
     
     // Give some time for the message to be sent before stopping
@@ -247,6 +275,7 @@ void _onStart(ServiceInstance service) async {
       'running': ftpServer != null,
       'ip': currentIP,
       'port': currentPort,
+      'webPort': 8080,
     });
   });
 }
