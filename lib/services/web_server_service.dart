@@ -77,6 +77,11 @@ class WebServerService {
       return;
     }
 
+    if (path == '/upload' && request.method == 'POST') {
+      await _handleUpload(request);
+      return;
+    }
+
     // Default 404
     request.response.statusCode = HttpStatus.notFound;
     request.response.write("404 Not Found");
@@ -198,12 +203,82 @@ class WebServerService {
         request.response.headers.contentType = ContentType.binary;
       }
 
-      await request.response.addStream(file.openRead());
-      await request.response.close();
-      
-      logFunction("${stat.size} bytes transferred via Web Download");
+      int transferred = 0;
+      try {
+        final stream = file.openRead().map((chunk) {
+          transferred += chunk.length;
+          return chunk;
+        });
+        await request.response.addStream(stream);
+        await request.response.close();
+      } finally {
+        if (transferred > 0) {
+          logFunction("$transferred bytes transferred via Web Download");
+        }
+      }
     } catch (e) {
       logFunction("Error streaming download: $e");
+    }
+  }
+
+  Future<void> _handleUpload(HttpRequest request) async {
+    final relativeDir = Uri.decodeComponent(request.uri.queryParameters['dir'] ?? '');
+    final filename = Uri.decodeComponent(request.uri.queryParameters['filename'] ?? '');
+    
+    if (filename.isEmpty) {
+      request.response.statusCode = HttpStatus.badRequest;
+      request.response.write("Filename is required.");
+      await request.response.close();
+      return;
+    }
+
+    final safeDirPath = _getSafePath(relativeDir);
+    if (safeDirPath == null) {
+      request.response.statusCode = HttpStatus.forbidden;
+      request.response.write("Access Denied.");
+      await request.response.close();
+      return;
+    }
+
+    final dir = Directory(safeDirPath);
+    if (!await dir.exists()) {
+      request.response.statusCode = HttpStatus.notFound;
+      request.response.write("Directory not found.");
+      await request.response.close();
+      return;
+    }
+
+    final safeFilePath = p.normalize(p.join(safeDirPath, filename));
+    if (!p.isWithin(safeDirPath, safeFilePath) && safeFilePath != safeDirPath) {
+      request.response.statusCode = HttpStatus.forbidden;
+      request.response.write("Invalid filename.");
+      await request.response.close();
+      return;
+    }
+
+    final file = File(safeFilePath);
+    IOSink? sink;
+    int transferred = 0;
+    
+    try {
+      sink = file.openWrite();
+      await request.listen((chunk) {
+        sink!.add(chunk);
+        transferred += chunk.length;
+      }).asFuture();
+      
+      request.response.statusCode = HttpStatus.ok;
+      request.response.write(jsonEncode({'success': true, 'path': safeFilePath}));
+    } catch (e) {
+      logFunction("Error handling upload: $e");
+      request.response.statusCode = HttpStatus.internalServerError;
+      request.response.write("Upload failed: $e");
+    } finally {
+      await sink?.close();
+      await request.response.close();
+      if (transferred > 0) {
+        logFunction("$transferred bytes transferred via Web Upload");
+      }
     }
   }
 
@@ -727,6 +802,93 @@ class WebServerService {
             gap: 16px;
         }
 
+        /* Upload Toast */
+        .upload-toast {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            background-color: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 20px;
+            width: 320px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transform: translateY(150%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 50;
+        }
+
+        .upload-toast.show {
+            transform: translateY(0);
+        }
+
+        .toast-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toast-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .toast-title i {
+            color: var(--accent);
+        }
+
+        .toast-progress-bar {
+            height: 6px;
+            background-color: var(--bg-base);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .toast-progress-fill {
+            height: 100%;
+            background-color: var(--accent);
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        /* Drag & Drop Overlay */
+        .drag-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(9, 11, 17, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        
+        .drag-overlay.active {
+            opacity: 1;
+        }
+
+        .drag-overlay i {
+            width: 80px; height: 80px;
+            margin-bottom: 20px;
+        }
+
+        .drag-overlay h2 {
+            font-size: 28px;
+            color: var(--text-base);
+            font-weight: 700;
+        }
+
         /* Custom Scrollbars */
         ::-webkit-scrollbar {
             width: 6px;
@@ -837,6 +999,10 @@ class WebServerService {
                 <input type="text" id="searchInput" placeholder="Search files..." oninput="handleSearch()">
             </div>
             <div class="header-actions">
+                <input type="file" id="fileUploadInput" multiple style="display: none;" onchange="handleFilesSelected(event)">
+                <button class="round-button" onclick="document.getElementById('fileUploadInput').click()" title="Upload files">
+                    <i data-lucide="upload-cloud"></i>
+                </button>
                 <button class="round-button" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">
                     <i data-lucide="moon"></i>
                 </button>
@@ -882,6 +1048,24 @@ class WebServerService {
             </div>
         </div>
     </main>
+
+    <!-- Drag Overlay -->
+    <div class="drag-overlay" id="dragOverlay">
+        <i data-lucide="upload-cloud"></i>
+        <h2>Drop files to upload</h2>
+    </div>
+
+    <!-- Upload Toast -->
+    <div class="upload-toast" id="uploadToast">
+        <div class="toast-header">
+            <div class="toast-title"><i data-lucide="upload"></i> <span>Uploading...</span></div>
+            <span id="uploadPercent" style="font-size: 12px; color: var(--text-muted);">0%</span>
+        </div>
+        <div class="toast-progress-bar">
+            <div class="toast-progress-fill" id="uploadProgressFill"></div>
+        </div>
+        <div id="uploadFilename" style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+    </div>
 
     <script>
         let currentDir = '';
@@ -1127,6 +1311,93 @@ class WebServerService {
             const d = new Date(isoString);
             return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
         }
+
+        function handleFilesSelected(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+            uploadFiles(files);
+            event.target.value = ''; // reset
+        }
+
+        async function uploadFiles(files) {
+            const toast = document.getElementById('uploadToast');
+            const progressFill = document.getElementById('uploadProgressFill');
+            const percentText = document.getElementById('uploadPercent');
+            const filenameText = document.getElementById('uploadFilename');
+            
+            toast.classList.add('show');
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                filenameText.innerText = `(\${i+1}/\${files.length}) \${file.name}`;
+                progressFill.style.width = '0%';
+                percentText.innerText = '0%';
+                
+                try {
+                    await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', `/upload?dir=\${encodeURIComponent(currentDir)}&filename=\${encodeURIComponent(file.name)}`);
+                        
+                        xhr.upload.onprogress = (e) => {
+                            if (e.lengthComputable) {
+                                const percent = Math.round((e.loaded / e.total) * 100);
+                                progressFill.style.width = percent + '%';
+                                percentText.innerText = percent + '%';
+                            }
+                        };
+                        
+                        xhr.onload = () => {
+                            if (xhr.status === 200) resolve();
+                            else reject(xhr.responseText);
+                        };
+                        
+                        xhr.onerror = () => reject("Network Error");
+                        xhr.send(file);
+                    });
+                } catch (e) {
+                    console.error("Upload failed for " + file.name, e);
+                }
+            }
+            
+            filenameText.innerText = "Upload Complete!";
+            setTimeout(() => {
+                toast.classList.remove('show');
+                loadFiles(currentDir);
+            }, 2000);
+        }
+
+        // Drag and drop support
+        const dragOverlay = document.getElementById('dragOverlay');
+        let dragCounter = 0;
+
+        window.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragCounter++;
+            dragOverlay.classList.add('active');
+        });
+
+        window.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter === 0) {
+                dragOverlay.classList.remove('active');
+            }
+        });
+
+        window.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragCounter = 0;
+            dragOverlay.classList.remove('active');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                uploadFiles(files);
+            }
+        });
     </script>
 </body>
 </html>
