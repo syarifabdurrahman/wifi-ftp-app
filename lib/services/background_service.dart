@@ -27,7 +27,20 @@ void notificationTapBackground(NotificationResponse notificationResponse) {
 class BackgroundServiceManager {
   static final FlutterBackgroundService _service = FlutterBackgroundService();
 
+  // Desktop Server Instances
+  static FtpServer? _desktopFtpServer;
+  static WebServerService? _desktopWebServer;
+  static bool _desktopIsRunning = false;
+  static int _desktopPort = 2121;
+  static final StreamController<Map<String, dynamic>?> _desktopStreamController =
+      StreamController<Map<String, dynamic>?>.broadcast();
+
   static Future<void> initialize() async {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      // Desktop doesn't support or need flutter_background_service/foreground notification init
+      return;
+    }
+
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('ic_bg_service_small');
 
@@ -77,6 +90,66 @@ class BackgroundServiceManager {
   }) async {
     debugPrint('BackgroundServiceManager: Starting service...');
     
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      try {
+        if (_desktopIsRunning) {
+          await stopService();
+        }
+
+        final rootDir = Directory(rootPath);
+        if (!rootDir.existsSync()) {
+          rootDir.createSync(recursive: true);
+        }
+
+        final networkInfo = NetworkInfo();
+        final currentIP = await networkInfo.getWifiIP() ?? '127.0.0.1';
+        _desktopPort = port;
+
+        _desktopFtpServer = FtpServer(
+          port,
+          username: anonymous ? null : username,
+          password: anonymous ? null : password,
+          fileOperations: PhysicalFileOperations(rootPath),
+          serverType: ServerType.readAndWrite,
+          logFunction: (log) {
+            debugPrint('FTP Desktop: $log');
+            _desktopStreamController.add({'message': log});
+          },
+        );
+
+        await _desktopFtpServer!.startInBackground();
+
+        _desktopWebServer = WebServerService(
+          rootPath: rootPath,
+          port: 8080,
+          logFunction: (log) {
+            debugPrint('WEB Desktop: $log');
+            _desktopStreamController.add({'message': log});
+          },
+        );
+        await _desktopWebServer!.start();
+
+        _desktopIsRunning = true;
+        
+        _desktopStreamController.add({
+          'running': true,
+          'ip': currentIP,
+          'port': port,
+          'webPort': 8080,
+          'message': 'Desktop Server started!\nFTP: ftp://$currentIP:$port\nWeb: http://$currentIP:8080',
+        });
+        
+        return true;
+      } catch (e) {
+        debugPrint('Desktop server start error: $e');
+        _desktopStreamController.add({
+          'running': false,
+          'error': e.toString(),
+        });
+        return false;
+      }
+    }
+
     try {
       final isRunning = await _service.isRunning();
       
@@ -101,6 +174,23 @@ class BackgroundServiceManager {
   }
 
   static Future<void> stopService() async {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      if (_desktopFtpServer != null) {
+        await _desktopFtpServer!.stop();
+        _desktopFtpServer = null;
+      }
+      if (_desktopWebServer != null) {
+        await _desktopWebServer!.stop();
+        _desktopWebServer = null;
+      }
+      _desktopIsRunning = false;
+      _desktopStreamController.add({
+        'running': false,
+        'message': 'FTP and Web Servers stopped',
+      });
+      return;
+    }
+
     try {
       _service.invoke('stopServer');
     } catch (e) {
@@ -109,14 +199,34 @@ class BackgroundServiceManager {
   }
 
   static void invoke(String method, [Map<String, dynamic>? args]) {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      if (method == 'getStatus') {
+        final networkInfo = NetworkInfo();
+        networkInfo.getWifiIP().then((ip) {
+          _desktopStreamController.add({
+            'running': _desktopIsRunning,
+            'ip': ip ?? '127.0.0.1',
+            'port': _desktopPort,
+            'webPort': 8080,
+          });
+        });
+      }
+      return;
+    }
     _service.invoke(method, args);
   }
 
   static Stream<Map<String, dynamic>?> get onDataReceived {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      return _desktopStreamController.stream;
+    }
     return _service.on('update');
   }
 
   static Future<bool> isServiceRunning() async {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      return _desktopIsRunning;
+    }
     return await _service.isRunning();
   }
 }

@@ -74,9 +74,12 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
             return fileName.contains(_searchQuery.toLowerCase());
           }).toList();
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                 child: Column(
@@ -242,11 +245,13 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                           ),
               ),
             ],
-          );
-        },
-      ),
-    );
-  }
+          ),
+        ),
+      );
+    },
+  ),
+);
+}
 
   Widget _buildEmptyState(BuildContext context) {
     return Center(

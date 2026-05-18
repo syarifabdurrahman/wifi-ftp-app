@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -5,8 +6,14 @@ class SettingsProvider with ChangeNotifier {
   late SharedPreferences _prefs;
   bool _isInitialized = false;
 
+  String get _defaultRootFolder {
+    if (Platform.isWindows) return Platform.environment['USERPROFILE'] ?? 'C:\\';
+    if (Platform.isLinux || Platform.isMacOS) return Platform.environment['HOME'] ?? '/';
+    return '/storage/emulated/0';
+  }
+
   int _port = 2121;
-  String _rootFolder = '/storage/emulated/0';
+  late String _rootFolder = _defaultRootFolder;
   bool _anonymousAccess = false;
   String _username = 'admin';
   String _password = 'password';
@@ -29,7 +36,14 @@ class SettingsProvider with ChangeNotifier {
   Future<void> _initPrefs() async {
     _prefs = await SharedPreferences.getInstance();
     _port = _prefs.getInt('port') ?? 2121;
-    _rootFolder = _prefs.getString('rootFolder') ?? '/storage/emulated/0';
+    
+    String savedRoot = _prefs.getString('rootFolder') ?? _defaultRootFolder;
+    // Sanitize: if the stored path is the Android default but we are on Desktop, overwrite it
+    if ((Platform.isWindows || Platform.isLinux || Platform.isMacOS) && savedRoot == '/storage/emulated/0') {
+      savedRoot = _defaultRootFolder;
+      await _prefs.setString('rootFolder', savedRoot);
+    }
+    _rootFolder = savedRoot;
     _anonymousAccess = _prefs.getBool('anonymousAccess') ?? false;
     _username = _prefs.getString('username') ?? 'admin';
     _password = _prefs.getString('password') ?? 'password';

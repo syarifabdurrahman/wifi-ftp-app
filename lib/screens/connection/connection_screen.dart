@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,7 +22,12 @@ class ConnectionScreen extends StatelessWidget {
     if (ftpProvider.isRunning) {
       await ftpProvider.stopServer();
     } else {
-      if (await Permission.manageExternalStorage.request().isGranted || await Permission.storage.request().isGranted) {
+      bool hasPermission = true;
+      if (Platform.isAndroid || Platform.isIOS) {
+        hasPermission = await Permission.manageExternalStorage.request().isGranted || await Permission.storage.request().isGranted;
+      }
+      
+      if (hasPermission) {
         final success = await ftpProvider.startServer(
           port: settingsProvider.port,
           rootPath: settingsProvider.rootFolder,
@@ -71,251 +77,256 @@ class ConnectionScreen extends StatelessWidget {
                 ? 'http://${ftpProvider.ipAddress}:${ftpProvider.webPort}'
                 : 'Server offline';
 
-            return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(16.0, MediaQuery.of(context).padding.top + 56 + 20, 16.0, 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Status Stat
-                  _buildQuickStat(
-                    context,
-                    title: 'Status',
-                    value: isRunning ? 'Online' : 'Offline',
-                    color: statusColor,
-                    icon: isRunning ? Icons.cloud_done : Icons.cloud_off,
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Connection Hero Card (Glassmorphism)
-                  GlassContainer(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        if (isRunning) ...[
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: QrImageView(
-                              data: webAddress,
-                              version: QrVersions.auto,
-                              size: 140.0,
-                              dataModuleStyle: const QrDataModuleStyle(
-                                dataModuleShape: QrDataModuleShape.circle,
-                                color: Color(0xFF191C21),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                        
-                        // Web Share Portal Card
-                        Text(
-                          'WEB SHARE PORTAL URL',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            letterSpacing: 1.5,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        InkWell(
-                          onTap: () {
-                            if (isRunning) {
-                              Clipboard.setData(ClipboardData(text: webAddress));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Web URL copied to clipboard')),
-                              );
-                              HapticFeedback.selectionClick();
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.language_rounded, color: Theme.of(context).colorScheme.primary, size: 20),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    webAddress,
-                                    style: AppTheme.codeSmall.copyWith(
-                                      color: isRunning ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.outline,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (isRunning) Icon(Icons.copy, size: 18, color: Theme.of(context).colorScheme.outline),
-                              ],
-                            ),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 20),
-
-                        // FTP Connection Card
-                        Text(
-                          'FTP CLIENT CONNECTION URL',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            letterSpacing: 1.5,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        InkWell(
-                          onTap: () {
-                            if (isRunning) {
-                              Clipboard.setData(ClipboardData(text: ftpAddress));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('FTP URL copied to clipboard')),
-                              );
-                              HapticFeedback.selectionClick();
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.settings_ethernet_rounded, color: statusColor, size: 20),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    ftpAddress,
-                                    style: AppTheme.codeSmall.copyWith(
-                                      color: isRunning ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.outline,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (isRunning) Icon(Icons.copy, size: 18, color: Theme.of(context).colorScheme.outline),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Power Button
-                  Center(
-                    child: PulseAnimation(
-                      isRunning: isRunning,
-                      color: statusColor,
-                      child: GestureDetector(
-                        onTap: () => _toggleServer(context, ftpProvider, settingsProvider),
-                        child: Container(
-                          width: 140,
-                          height: 140,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: isRunning 
-                                ? [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primaryContainer]
-                                : [Theme.of(context).colorScheme.outline, Theme.of(context).colorScheme.outlineVariant],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: statusColor.withValues(alpha: 0.3),
-                                blurRadius: 30,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            isRunning ? Icons.power_settings_new : Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: 64,
-                          ),
-                        ),
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(16.0, MediaQuery.of(context).padding.top + 56 + 20, 16.0, 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Status Stat
+                      _buildQuickStat(
+                        context,
+                        title: 'Status',
+                        value: isRunning ? 'Online' : 'Offline',
+                        color: statusColor,
+                        icon: isRunning ? Icons.cloud_done : Icons.cloud_off,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  
-                  // Transfer Stats Card
-                  if (isRunning) ...[
-                    _buildSectionHeader(context, 'DATA USAGE'),
-                    GlassContainer(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          _buildTransferItem(
-                            context,
-                            label: 'Total Transferred',
-                            value: _formatBytes(ftpProvider.totalBytesTransferred),
-                            icon: Icons.swap_vert_rounded,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // Storage Insight
-                  _buildSectionHeader(context, 'STORAGE INSIGHT'),
-                  Consumer<FileProvider>(
-                    builder: (context, fileProvider, _) {
-                      final usedPercent = fileProvider.totalStorageGB > 0 
-                          ? fileProvider.usedStorageGB / fileProvider.totalStorageGB 
-                          : 0.0;
-                      return GlassContainer(
-                        padding: const EdgeInsets.all(20),
+                      const SizedBox(height: 24),
+                      
+                      // Connection Hero Card (Glassmorphism)
+                      GlassContainer(
+                        padding: const EdgeInsets.all(24),
                         child: Column(
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Device Storage',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                            if (isRunning) ...[
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                Text(
-                                  '${fileProvider.usedStorageGB.toStringAsFixed(1)} / ${fileProvider.totalStorageGB.toStringAsFixed(1)} GB',
-                                  style: Theme.of(context).textTheme.labelMedium,
+                                child: QrImageView(
+                                  data: webAddress,
+                                  version: QrVersions.auto,
+                                  size: 140.0,
+                                  dataModuleStyle: const QrDataModuleStyle(
+                                    dataModuleShape: QrDataModuleShape.circle,
+                                    color: Color(0xFF191C21),
+                                  ),
                                 ),
-                              ],
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+                            
+                            // Web Share Portal Card
+                            Text(
+                              'WEB SHARE PORTAL URL',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                letterSpacing: 1.5,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                             ),
-                            const SizedBox(height: 16),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: LinearProgressIndicator(
-                                value: usedPercent,
-                                backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
-                                color: usedPercent > 0.9 ? Colors.redAccent : Theme.of(context).colorScheme.primary,
-                                minHeight: 12,
+                            const SizedBox(height: 10),
+                            InkWell(
+                              onTap: () {
+                                if (isRunning) {
+                                  Clipboard.setData(ClipboardData(text: webAddress));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Web URL copied to clipboard')),
+                                  );
+                                  HapticFeedback.selectionClick();
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.language_rounded, color: Theme.of(context).colorScheme.primary, size: 20),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        webAddress,
+                                        style: AppTheme.codeSmall.copyWith(
+                                          color: isRunning ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.outline,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (isRunning) Icon(Icons.copy, size: 18, color: Theme.of(context).colorScheme.outline),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 20),
+
+                            // FTP Connection Card
+                            Text(
+                              'FTP CLIENT CONNECTION URL',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                letterSpacing: 1.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            InkWell(
+                              onTap: () {
+                                if (isRunning) {
+                                  Clipboard.setData(ClipboardData(text: ftpAddress));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('FTP URL copied to clipboard')),
+                                  );
+                                  HapticFeedback.selectionClick();
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.settings_ethernet_rounded, color: statusColor, size: 20),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        ftpAddress,
+                                        style: AppTheme.codeSmall.copyWith(
+                                          color: isRunning ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.outline,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (isRunning) Icon(Icons.copy, size: 18, color: Theme.of(context).colorScheme.outline),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 32),
+                      ),
+                      const SizedBox(height: 32),
 
-                  // Native Ad Card
-                  const NativeAdCard(),
-                  const SizedBox(height: 32),
-                ],
+                      // Power Button
+                      Center(
+                        child: PulseAnimation(
+                          isRunning: isRunning,
+                          color: statusColor,
+                          child: GestureDetector(
+                            onTap: () => _toggleServer(context, ftpProvider, settingsProvider),
+                            child: Container(
+                              width: 140,
+                              height: 140,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: isRunning 
+                                    ? [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primaryContainer]
+                                    : [Theme.of(context).colorScheme.outline, Theme.of(context).colorScheme.outlineVariant],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: statusColor.withValues(alpha: 0.3),
+                                    blurRadius: 30,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                isRunning ? Icons.power_settings_new : Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: 64,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      
+                      // Transfer Stats Card
+                      if (isRunning) ...[
+                        _buildSectionHeader(context, 'DATA USAGE'),
+                        GlassContainer(
+                          padding: const EdgeInsets.all(20),
+                          child: Row(
+                            children: [
+                              _buildTransferItem(
+                                context,
+                                label: 'Total Transferred',
+                                value: _formatBytes(ftpProvider.totalBytesTransferred),
+                                icon: Icons.swap_vert_rounded,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+
+                      // Storage Insight
+                      _buildSectionHeader(context, 'STORAGE INSIGHT'),
+                      Consumer<FileProvider>(
+                        builder: (context, fileProvider, _) {
+                          final usedPercent = fileProvider.totalStorageGB > 0 
+                              ? fileProvider.usedStorageGB / fileProvider.totalStorageGB 
+                              : 0.0;
+                          return GlassContainer(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Device Storage',
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                                    ),
+                                    Text(
+                                      '${fileProvider.usedStorageGB.toStringAsFixed(1)} / ${fileProvider.totalStorageGB.toStringAsFixed(1)} GB',
+                                      style: Theme.of(context).textTheme.labelMedium,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: LinearProgressIndicator(
+                                    value: usedPercent,
+                                    backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
+                                    color: usedPercent > 0.9 ? Colors.redAccent : Theme.of(context).colorScheme.primary,
+                                    minHeight: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Native Ad Card
+                      const NativeAdCard(),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
+                ),
               ),
             );
           },

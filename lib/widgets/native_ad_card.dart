@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:quick_wifi_share/helpers/ad_helper.dart';
@@ -18,7 +19,9 @@ class _NativeAdCardState extends State<NativeAdCard> {
   @override
   void initState() {
     super.initState();
-    _loadAd();
+    if (Platform.isAndroid || Platform.isIOS) {
+      _loadAd();
+    }
   }
 
   Future<void> _loadAd() async {
@@ -51,6 +54,9 @@ class _NativeAdCardState extends State<NativeAdCard> {
 
   @override
   Widget build(BuildContext context) {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      return const SizedBox.shrink();
+    }
     if (_isAdLoading) {
       return const GlassContainer(
         height: 100,

@@ -1,14 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:disk_space_2/disk_space_2.dart';
 
 class FileProvider with ChangeNotifier {
-  String _currentPath = '/storage/emulated/0';
+  late String _currentPath;
   List<FileSystemEntity> _files = [];
   bool _isLoading = false;
 
-  double _totalStorageGB = 128.0; // Mocked for now, getting real storage requires native code
-  double _usedStorageGB = 45.2;
+  double _totalStorageGB = 0.0;
+  double _usedStorageGB = 0.0;
 
   String get currentPath => _currentPath;
   List<FileSystemEntity> get files => _files;
@@ -17,7 +18,33 @@ class FileProvider with ChangeNotifier {
   double get usedStorageGB => _usedStorageGB;
 
   FileProvider() {
+    _initPath();
     _loadFiles();
+  }
+
+  void _initPath() {
+    if (Platform.isAndroid) {
+      _currentPath = '/storage/emulated/0';
+    } else if (Platform.isWindows) {
+      _currentPath = Platform.environment['USERPROFILE'] ?? Directory.current.path;
+    } else {
+      _currentPath = Platform.environment['HOME'] ?? Directory.current.path;
+    }
+  }
+
+  Future<void> _updateStorageInfo() async {
+    try {
+      final totalMB = await DiskSpace.getTotalDiskSpace;
+      final freeMB = await DiskSpace.getFreeDiskSpace;
+      
+      if (totalMB != null && freeMB != null) {
+        _totalStorageGB = totalMB / 1024;
+        _usedStorageGB = (totalMB - freeMB) / 1024;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error getting disk space: $e');
+    }
   }
 
   void setPath(String path) {
@@ -32,6 +59,8 @@ class FileProvider with ChangeNotifier {
   Future<void> _loadFiles() async {
     _isLoading = true;
     notifyListeners();
+
+    await _updateStorageInfo();
 
     try {
       // Request and check permissions on Android

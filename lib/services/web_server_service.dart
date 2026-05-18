@@ -200,6 +200,8 @@ class WebServerService {
 
       await request.response.addStream(file.openRead());
       await request.response.close();
+      
+      logFunction("${stat.size} bytes transferred via Web Download");
     } catch (e) {
       logFunction("Error streaming download: $e");
     }

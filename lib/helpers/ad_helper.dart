@@ -16,7 +16,9 @@ class AdHelper {
   }
 
   static Future<void> initialize() async {
-    await MobileAds.instance.initialize();
+    if (Platform.isAndroid || Platform.isIOS) {
+      await MobileAds.instance.initialize();
+    }
   }
 
   static NativeAd createNativeAd({
