@@ -175,12 +175,23 @@ class BackgroundServiceManager {
 
   static Future<void> stopService() async {
     if (!Platform.isAndroid && !Platform.isIOS) {
-      if (_desktopFtpServer != null) {
-        await _desktopFtpServer!.stop();
+      try {
+        if (_desktopFtpServer != null) {
+          await _desktopFtpServer!.stop().timeout(const Duration(seconds: 2));
+        }
+      } catch (e) {
+        debugPrint('Desktop FTP stop error: $e');
+      } finally {
         _desktopFtpServer = null;
       }
-      if (_desktopWebServer != null) {
-        await _desktopWebServer!.stop();
+      
+      try {
+        if (_desktopWebServer != null) {
+          await _desktopWebServer!.stop().timeout(const Duration(seconds: 2));
+        }
+      } catch (e) {
+        debugPrint('Desktop Web stop error: $e');
+      } finally {
         _desktopWebServer = null;
       }
       _desktopIsRunning = false;
@@ -358,15 +369,35 @@ void _onStart(ServiceInstance service) async {
 
   service.on('stopServer').listen((_) async {
     debugPrint('Received stopServer event');
-    if (ftpServer != null) {
-      await ftpServer!.stop();
+    
+    try {
+      if (ftpServer != null) {
+        debugPrint('Stopping FTP Server...');
+        await ftpServer!.stop().timeout(const Duration(seconds: 2));
+      }
+    } catch (e) {
+      debugPrint('Error stopping FTP server (ignored): $e');
+    } finally {
       ftpServer = null;
     }
-    if (webServer != null) {
-      await webServer!.stop();
+
+    try {
+      if (webServer != null) {
+        debugPrint('Stopping Web Server...');
+        await webServer!.stop().timeout(const Duration(seconds: 2));
+      }
+    } catch (e) {
+      debugPrint('Error stopping Web server (ignored): $e');
+    } finally {
       webServer = null;
     }
-    await notifications.cancel(notificationId);
+
+    try {
+      await notifications.cancel(notificationId);
+    } catch (e) {
+      debugPrint('Error canceling notification: $e');
+    }
+
     service.invoke('update', {
       'running': false,
       'message': 'FTP and Web Servers stopped',
@@ -376,6 +407,7 @@ void _onStart(ServiceInstance service) async {
     await Future.delayed(const Duration(milliseconds: 500));
     
     if (service is AndroidServiceInstance) {
+      debugPrint('Stopping Android Foreground Service...');
       service.stopSelf();
     }
   });

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:quick_wifi_share/providers/file_provider.dart';
@@ -28,6 +29,18 @@ class ConnectionScreen extends StatelessWidget {
       }
       
       if (hasPermission) {
+        final info = NetworkInfo();
+        final wifiIP = await info.getWifiIP();
+        
+        if (wifiIP == null || wifiIP.isEmpty || wifiIP == '0.0.0.0' || wifiIP == '127.0.0.1') {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please connect to a WiFi network first.')),
+            );
+          }
+          return;
+        }
+
         final success = await ftpProvider.startServer(
           port: settingsProvider.port,
           rootPath: settingsProvider.rootFolder,
