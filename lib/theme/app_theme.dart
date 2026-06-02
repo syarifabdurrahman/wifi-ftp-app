@@ -2,13 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primary = Color(0xFF00478D);
-  static const Color primaryContainer = Color(0xFF005EB8);
+  // Accent color presets
+  static const List<Color> accentColors = [
+    Color(0xFF00478D), // Default Blue
+    Color(0xFF005EB8), // Bright Blue
+    Color(0xFF1B9C5E), // Green
+    Color(0xFFE65100), // Orange
+    Color(0xFF7B1FA2), // Purple
+    Color(0xFFC62828), // Red
+    Color(0xFF00838F), // Teal
+    Color(0xFFF9A825), // Amber
+    Color(0xFF37474F), // Dark Gray
+  ];
+
+  static Color primary(int index) => accentColors[index.clamp(0, accentColors.length - 1)];
+  static Color primaryContainer(int index) {
+    final c = accentColors[index.clamp(0, accentColors.length - 1)];
+    return Color.lerp(c, Colors.white, 0.3) ?? c;
+  }
+
   static const Color onPrimary = Color(0xFFFFFFFF);
   static const Color onPrimaryContainer = Color(0xFFC8DAFF);
 
   static const Color secondary = Color(0xFF505F76);
-  static const Color secondaryContainer = Color(0xD0E1FBFF); // Actually #D0E1FB
+  static const Color secondaryContainer = Color(0xD0E1FBFF);
   static const Color onSecondary = Color(0xFFFFFFFF);
   static const Color onSecondaryContainer = Color(0xFF54647A);
 
@@ -50,27 +67,30 @@ class AppTheme {
     return Theme.of(context).colorScheme.surface;
   }
 
-  static ThemeData get lightTheme {
-    return _buildTheme(Brightness.light);
+  static ThemeData lightTheme([int accentIndex = 0]) {
+    return _buildTheme(Brightness.light, accentIndex);
   }
 
-  static ThemeData get darkTheme {
-    return _buildTheme(Brightness.dark);
+  static ThemeData darkTheme([int accentIndex = 0]) {
+    return _buildTheme(Brightness.dark, accentIndex);
   }
 
-  static ThemeData _buildTheme(Brightness brightness) {
+  static ThemeData _buildTheme(Brightness brightness, [int accentIndex = 0]) {
     final bool isDark = brightness == Brightness.dark;
+    final Color accent = accentColors[accentIndex.clamp(0, accentColors.length - 1)];
+    final Color accentDark = isDark
+        ? Color.lerp(accent, Colors.white, 0.4) ?? accent
+        : accent;
+    final Color accentContainer = Color.lerp(accent, isDark ? Colors.black : Colors.white, 0.2) ?? accent;
 
     final ColorScheme colorScheme = ColorScheme(
       brightness: brightness,
-      primary: isDark ? const Color(0xFF6E9BFF) : primary,
+      primary: accentDark,
       onPrimary: isDark ? const Color(0xFF002F64) : onPrimary,
-      primaryContainer: isDark
-          ? const Color(0xFF004494)
-          : (isDark ? const Color(0xFF003062) : primaryContainer),
+      primaryContainer: accentContainer,
       onPrimaryContainer: isDark
           ? const Color(0xFFD6E3FF)
-          : (isDark ? const Color(0xFFD6E3FF) : onPrimaryContainer),
+          : onPrimaryContainer,
       secondary: isDark ? const Color(0xFFB9C8DA) : secondary,
       onSecondary: isDark ? const Color(0xFF243240) : onSecondary,
       secondaryContainer: isDark

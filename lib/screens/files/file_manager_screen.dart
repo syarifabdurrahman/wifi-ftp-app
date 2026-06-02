@@ -5,6 +5,7 @@ import 'package:quick_wifi_share/providers/file_provider.dart';
 import 'package:quick_wifi_share/providers/settings_provider.dart';
 import 'package:quick_wifi_share/screens/files/media_preview_screen.dart';
 import 'package:quick_wifi_share/theme/app_theme.dart';
+import 'package:quick_wifi_share/widgets/bookmarks_dialog.dart';
 import 'package:path/path.dart' as p;
 
 class FileManagerScreen extends StatefulWidget {
@@ -14,9 +15,25 @@ class FileManagerScreen extends StatefulWidget {
   State<FileManagerScreen> createState() => _FileManagerScreenState();
 }
 
+enum FileFilter { all, images, videos, documents, archives, audio }
+
+extension FileFilterLabel on FileFilter {
+  String get label {
+    switch (this) {
+      case FileFilter.all: return 'All';
+      case FileFilter.images: return 'Images';
+      case FileFilter.videos: return 'Videos';
+      case FileFilter.documents: return 'Docs';
+      case FileFilter.archives: return 'Archives';
+      case FileFilter.audio: return 'Audio';
+    }
+  }
+}
+
 class _FileManagerScreenState extends State<FileManagerScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  FileFilter _fileFilter = FileFilter.all;
 
   @override
   void initState() {
@@ -31,6 +48,25 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  bool _matchesFilter(String extension) {
+    if (_fileFilter == FileFilter.all) return true;
+    final ext = extension.toUpperCase();
+    switch (_fileFilter) {
+      case FileFilter.images:
+        return ['JPG', 'JPEG', 'PNG', 'WEBP', 'GIF', 'BMP'].contains(ext);
+      case FileFilter.videos:
+        return ['MP4', 'MKV', 'MOV', 'AVI', 'WMV', 'FLV'].contains(ext);
+      case FileFilter.documents:
+        return ['PDF', 'DOC', 'DOCX', 'XLS', 'XLSX', 'PPT', 'PPTX', 'TXT', 'CSV'].contains(ext);
+      case FileFilter.archives:
+        return ['ZIP', 'RAR', '7Z', 'TAR', 'GZ', 'TGZ'].contains(ext);
+      case FileFilter.audio:
+        return ['MP3', 'WAV', 'M4A', 'FLAC', 'AAC', 'OGG'].contains(ext);
+      case FileFilter.all:
+        return true;
+    }
   }
 
   String _formatBytes(int bytes) {
@@ -54,6 +90,48 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
       appBar: AppBar(
         title: const Text('File Explorer'),
         actions: [
+          // Storage root selector
+          Consumer<FileProvider>(
+            builder: (context, fp, _) {
+              if (fp.storageRoots.length <= 1) return const SizedBox.shrink();
+              return PopupMenuButton<String>(
+                icon: Icon(Icons.storage_rounded, color: Theme.of(context).colorScheme.secondary),
+                tooltip: 'Switch storage',
+                onSelected: (path) {
+                  fp.setPath(path);
+                  _searchController.clear();
+                  _searchQuery = '';
+                  context.read<FileProvider>().cancelSearch();
+                },
+                itemBuilder: (_) => fp.storageRoots.map((path) {
+                  final isActive = fp.currentPath == path || fp.currentPath.startsWith(path);
+                  return PopupMenuItem(
+                    value: path,
+                    child: Row(
+                      children: [
+                        Icon(
+                          isActive ? Icons.drive_file_move_rounded : Icons.storage_rounded,
+                          size: 18,
+                          color: isActive ? Theme.of(context).colorScheme.primary : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          path.split('/').last,
+                          style: TextStyle(
+                            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(path, style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        )),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.create_new_folder_rounded),
             tooltip: 'New Folder',
@@ -68,11 +146,24 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
       ),
       body: Consumer<FileProvider>(
         builder: (context, fileProvider, _) {
-          // Filter files based on search query
-          final filteredFiles = fileProvider.files.where((file) {
-            final fileName = p.basename(file.path).toLowerCase();
-            return fileName.contains(_searchQuery.toLowerCase());
+          // Determine files source: normal list or recursive search results
+          final bool isRecursiveSearch = _searchQuery.isNotEmpty;
+          final filesSource = isRecursiveSearch ? fileProvider.searchResults : fileProvider.files;
+
+          // Apply type filter
+          final filteredFiles = filesSource.where((file) {
+            if (file is Directory) return _fileFilter == FileFilter.all || isRecursiveSearch;
+            final ext = p.extension(file.path).replaceAll('.', '');
+            return _matchesFilter(ext);
           }).toList();
+
+          // Client-side filter for search (when not recursive, still filter client-side)
+          final displayedFiles = isRecursiveSearch
+              ? filteredFiles
+              : filteredFiles.where((file) {
+                  final fileName = p.basename(file.path).toLowerCase();
+                  return fileName.contains(_searchQuery.toLowerCase());
+                }).toList();
 
           return Center(
             child: ConstrainedBox(
@@ -108,9 +199,12 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                             child: TextField(
                               controller: _searchController,
                               onChanged: (value) {
-                                setState(() {
-                                  _searchQuery = value;
-                                });
+                                setState(() => _searchQuery = value);
+                                if (value.isNotEmpty) {
+                                  context.read<FileProvider>().searchRecursive(value);
+                                } else {
+                                  context.read<FileProvider>().cancelSearch();
+                                }
                               },
                               decoration: InputDecoration(
                                 hintText: 'Search in this folder...',
@@ -130,6 +224,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                                   _searchController.clear();
                                   _searchQuery = '';
                                 });
+                                context.read<FileProvider>().cancelSearch();
                               },
                             ),
                         ],
@@ -137,7 +232,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Breadcrumbs style path
+                    // Breadcrumbs style path with bookmarks
                     Row(
                       children: [
                         // Clickable Home/Root Button
@@ -182,6 +277,27 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                             ),
                           ),
                         ),
+                        // Bookmark toggle
+                        Consumer<SettingsProvider>(
+                          builder: (context, settings, _) {
+                            final isBookmarked = settings.isBookmarked(fileProvider.currentPath);
+                            return IconButton(
+                              icon: Icon(
+                                isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                                size: 20,
+                                color: isBookmarked ? Theme.of(context).colorScheme.primary : null,
+                              ),
+                              tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark this folder',
+                              onPressed: () => settings.toggleBookmark(fileProvider.currentPath),
+                            );
+                          },
+                        ),
+                        // View bookmarks
+                        IconButton(
+                          icon: Icon(Icons.bookmarks_rounded, size: 20, color: Theme.of(context).colorScheme.secondary),
+                          tooltip: 'Bookmarked folders',
+                          onPressed: () => BookmarksDialog.show(context),
+                        ),
                       ],
                     ),
 
@@ -194,18 +310,45 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                 ),
               ),
 
+              // Filter Chips
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                child: SizedBox(
+                  height: 36,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: FileFilter.values.map((filter) {
+                      final isSelected = _fileFilter == filter;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          label: Text(filter.label, style: const TextStyle(fontSize: 12)),
+                          selected: isSelected,
+                          onSelected: (_) => setState(() => _fileFilter = filter),
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                          checkmarkColor: Theme.of(context).colorScheme.primary,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+
               // Files List
               Expanded(
-                child: fileProvider.isLoading
+                child: fileProvider.isLoading || fileProvider.isSearching
                     ? const Center(child: CircularProgressIndicator())
-                    : filteredFiles.isEmpty
+                    : displayedFiles.isEmpty
                         ? _buildEmptyState(context)
                         : ListView.separated(
                             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                            itemCount: filteredFiles.length,
+                            itemCount: displayedFiles.length,
                             separatorBuilder: (context, index) => const SizedBox(height: 8),
                             itemBuilder: (context, index) {
-                              final fileEntity = filteredFiles[index];
+                              final fileEntity = displayedFiles[index];
                               final isDirectory = fileEntity is Directory;
 
                               // Use safe stat access

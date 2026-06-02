@@ -7,6 +7,9 @@ class FileProvider with ChangeNotifier {
   late String _currentPath;
   List<FileSystemEntity> _files = [];
   bool _isLoading = false;
+  bool _isSearching = false;
+  List<FileSystemEntity> _searchResults = [];
+  List<String> _storageRoots = [];
 
   double _totalStorageGB = 0.0;
   double _usedStorageGB = 0.0;
@@ -14,6 +17,9 @@ class FileProvider with ChangeNotifier {
   String get currentPath => _currentPath;
   List<FileSystemEntity> get files => _files;
   bool get isLoading => _isLoading;
+  bool get isSearching => _isSearching;
+  List<FileSystemEntity> get searchResults => _searchResults;
+  List<String> get storageRoots => _storageRoots;
   double get totalStorageGB => _totalStorageGB;
   double get usedStorageGB => _usedStorageGB;
 
@@ -29,6 +35,58 @@ class FileProvider with ChangeNotifier {
       _currentPath = Platform.environment['USERPROFILE'] ?? Directory.current.path;
     } else {
       _currentPath = Platform.environment['HOME'] ?? Directory.current.path;
+    }
+    _detectStorageRoots();
+  }
+
+  void _detectStorageRoots() {
+    _storageRoots = [];
+    if (Platform.isAndroid) {
+      _storageRoots.add('/storage/emulated/0');
+      try {
+        final storageDir = Directory('/storage');
+        if (storageDir.existsSync()) {
+          for (final entity in storageDir.listSync()) {
+            final path = entity.path;
+            if (path != '/storage/emulated/0' && !path.contains('self') && entity is Directory) {
+              _storageRoots.add(path);
+            }
+          }
+        }
+      } catch (_) {}
+    } else if (Platform.isWindows) {
+      try {
+        for (final drive in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']) {
+          final path = '$drive:\\';
+          if (Directory(path).existsSync()) {
+            _storageRoots.add(path);
+          }
+        }
+      } catch (_) {}
+      if (!_storageRoots.contains(Platform.environment['USERPROFILE'] ?? '')) {
+        _storageRoots.add(Platform.environment['USERPROFILE'] ?? 'C:\\');
+      }
+    } else {
+      final home = Platform.environment['HOME'] ?? '/';
+      _storageRoots.add(home);
+      try {
+        final mediaDir = Directory('/media');
+        if (mediaDir.existsSync()) {
+          for (final entity in mediaDir.listSync()) {
+            if (entity is Directory && !entity.path.contains('.')) {
+              _storageRoots.add(entity.path);
+            }
+          }
+        }
+        final mntDir = Directory('/mnt');
+        if (mntDir.existsSync()) {
+          for (final entity in mntDir.listSync()) {
+            if (entity is Directory && !entity.path.contains('.')) {
+              _storageRoots.add(entity.path);
+            }
+          }
+        }
+      } catch (_) {}
     }
   }
 
@@ -94,6 +152,51 @@ class FileProvider with ChangeNotifier {
     }
 
     _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> searchRecursive(String query) async {
+    if (query.isEmpty) {
+      _isSearching = false;
+      _searchResults = [];
+      notifyListeners();
+      return;
+    }
+
+    _isSearching = true;
+    _searchResults = [];
+    notifyListeners();
+
+    try {
+      final dir = Directory(_currentPath);
+      if (await dir.exists()) {
+        final results = <FileSystemEntity>[];
+        await for (final entity in dir.list(recursive: true, followLinks: false)) {
+          if (entity.path.split('/').last.toLowerCase().contains(query.toLowerCase())) {
+            results.add(entity);
+          }
+        }
+        results.sort((a, b) {
+          final aIsDir = a is Directory;
+          final bIsDir = b is Directory;
+          if (aIsDir && !bIsDir) return -1;
+          if (!aIsDir && bIsDir) return 1;
+          return a.path.toLowerCase().compareTo(b.path.toLowerCase());
+        });
+        _searchResults = results;
+      }
+    } catch (e) {
+      debugPrint('Error searching files: $e');
+      _searchResults = [];
+    }
+
+    _isSearching = false;
+    notifyListeners();
+  }
+
+  void cancelSearch() {
+    _isSearching = false;
+    _searchResults = [];
     notifyListeners();
   }
 

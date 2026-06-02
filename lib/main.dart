@@ -5,6 +5,7 @@ import 'package:quick_wifi_share/providers/file_provider.dart';
 import 'package:quick_wifi_share/providers/ftp_provider.dart';
 import 'package:quick_wifi_share/providers/settings_provider.dart';
 import 'package:quick_wifi_share/screens/main_navigation_screen.dart';
+import 'package:quick_wifi_share/screens/pin_lock_screen.dart';
 import 'package:quick_wifi_share/services/background_service.dart';
 import 'package:quick_wifi_share/theme/app_theme.dart';
 
@@ -26,17 +27,36 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _unlocked = false;
 
   @override
   Widget build(BuildContext context) {
     final settingsProvider = context.watch<SettingsProvider>();
 
+    if (settingsProvider.pinEnabled && !_unlocked && settingsProvider.isInitialized) {
+      final accentIdx = settingsProvider.accentColorIndex;
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: PinLockScreen(onUnlocked: () => setState(() => _unlocked = true)),
+        theme: AppTheme.lightTheme(accentIdx),
+        darkTheme: AppTheme.darkTheme(accentIdx),
+        themeMode: settingsProvider.themeMode,
+      );
+    }
+
+    final accentIdx = settingsProvider.accentColorIndex;
     return MaterialApp(
       title: 'WiFi FTP App',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme(accentIdx),
+      darkTheme: AppTheme.darkTheme(accentIdx),
       themeMode: settingsProvider.themeMode,
       home: const MainNavigationScreen(),
       debugShowCheckedModeBanner: false,

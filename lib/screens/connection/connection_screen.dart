@@ -15,8 +15,38 @@ import 'package:quick_wifi_share/widgets/glass_container.dart';
 import 'package:quick_wifi_share/widgets/native_ad_card.dart';
 import 'package:quick_wifi_share/widgets/pulse_animation.dart';
 
-class ConnectionScreen extends StatelessWidget {
+class ConnectionScreen extends StatefulWidget {
   const ConnectionScreen({super.key});
+
+  @override
+  State<ConnectionScreen> createState() => _ConnectionScreenState();
+}
+
+class _ConnectionScreenState extends State<ConnectionScreen> {
+  bool _autoStartChecked = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_autoStartChecked) {
+      _autoStartChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _tryAutoStart();
+      });
+    }
+  }
+
+  Future<void> _tryAutoStart() async {
+    if (!mounted) return;
+    final settings = context.read<SettingsProvider>();
+    if (!settings.autoStart) return;
+    if (settings.isInitialized) {
+      final ftp = context.read<FtpProvider>();
+      if (!ftp.isRunning && !ftp.isStarting) {
+        await _toggleServer(context, ftp, settings);
+      }
+    }
+  }
 
   Future<void> _toggleServer(BuildContext context, FtpProvider ftpProvider, SettingsProvider settingsProvider) async {
     HapticFeedback.mediumImpact();
@@ -94,6 +124,7 @@ class ConnectionScreen extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 800),
                 child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(16.0, MediaQuery.of(context).padding.top + 56 + 20, 16.0, 20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -9,6 +9,8 @@ class FtpProvider with ChangeNotifier {
   String _ipAddress = '0.0.0.0';
   int _webPort = 8080;
   int _totalBytesTransferred = 0;
+  int _autoStopMinutes = 0;
+  Timer? _autoStopTimer;
   final List<String> _logs = [];
   StreamSubscription<Map<String, dynamic>?>? _serviceSubscription;
 
@@ -17,6 +19,7 @@ class FtpProvider with ChangeNotifier {
   String get ipAddress => _ipAddress;
   int get webPort => _webPort;
   int get totalBytesTransferred => _totalBytesTransferred;
+  int get autoStopMinutes => _autoStopMinutes;
   List<String> get logs => List.unmodifiable(_logs);
 
   FtpProvider() {
@@ -60,9 +63,11 @@ class FtpProvider with ChangeNotifier {
           
           if (_isRunning && event.containsKey('ip')) {
             _ipAddress = event['ip'] as String;
+            _startAutoStopTimer();
           } else if (!_isRunning) {
             _totalBytesTransferred = 0;
             _logs.clear();
+            _cancelAutoStopTimer();
           }
           
           debugPrint('FtpProvider: isRunning changed to $_isRunning');
@@ -154,9 +159,36 @@ class FtpProvider with ChangeNotifier {
     await BackgroundServiceManager.stopService();
   }
 
+  void setAutoStopMinutes(int minutes) {
+    _autoStopMinutes = minutes;
+    if (_isRunning) {
+      _cancelAutoStopTimer();
+      _startAutoStopTimer();
+    }
+    notifyListeners();
+  }
+
+  void _startAutoStopTimer() {
+    _cancelAutoStopTimer();
+    if (_autoStopMinutes <= 0) return;
+    _autoStopTimer = Timer(Duration(minutes: _autoStopMinutes), () {
+      if (_isRunning) {
+        _logs.insert(0, 'Auto-stop: Server stopped after $_autoStopMinutes minutes');
+        stopServer();
+        notifyListeners();
+      }
+    });
+  }
+
+  void _cancelAutoStopTimer() {
+    _autoStopTimer?.cancel();
+    _autoStopTimer = null;
+  }
+
   @override
   void dispose() {
     _serviceSubscription?.cancel();
+    _cancelAutoStopTimer();
     super.dispose();
   }
 }

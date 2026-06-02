@@ -122,6 +122,7 @@ class BackgroundServiceManager {
         _desktopWebServer = WebServerService(
           rootPath: rootPath,
           port: 8080,
+          speedLimitKBps: 0,
           logFunction: (log) {
             debugPrint('WEB Desktop: $log');
             _desktopStreamController.add({'message': log});
@@ -311,6 +312,7 @@ void _onStart(ServiceInstance service) async {
       webServer = WebServerService(
         rootPath: rootPath,
         port: 8080,
+        speedLimitKBps: 0,
         logFunction: (log) {
           debugPrint('WEB: $log');
           service.invoke('update', {'message': log});

@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 
 class WebServerService {
@@ -7,10 +9,12 @@ class WebServerService {
   final String rootPath;
   final int port;
   final Function(String) logFunction;
+  int speedLimitKBps = 0;
 
   WebServerService({
     required this.rootPath,
     this.port = 8080,
+    this.speedLimitKBps = 0,
     required this.logFunction,
   });
 
@@ -74,6 +78,11 @@ class WebServerService {
 
     if (path == '/download') {
       await _handleDownload(request);
+      return;
+    }
+
+    if (path == '/download-zip') {
+      await _handleDownloadZip(request);
       return;
     }
 
@@ -205,10 +214,28 @@ class WebServerService {
 
       int transferred = 0;
       try {
-        final stream = file.openRead().map((chunk) {
-          transferred += chunk.length;
-          return chunk;
-        });
+        Stream<List<int>> stream = file.openRead();
+        if (speedLimitKBps > 0) {
+          final chunkSize = speedLimitKBps * 1024; // bytes per chunk
+          final delay = const Duration(milliseconds: 1000);
+          stream = stream.transform(
+            StreamTransformer.fromHandlers(
+              handleData: (chunk, sink) async {
+                for (int i = 0; i < chunk.length; i += chunkSize) {
+                  final int end = (i + chunkSize > chunk.length) ? chunk.length : i + chunkSize;
+                  sink.add(chunk.sublist(i, end));
+                  transferred += end - i;
+                  await Future.delayed(delay);
+                }
+              },
+            ),
+          );
+        } else {
+          stream = stream.map((chunk) {
+            transferred += chunk.length;
+            return chunk;
+          });
+        }
         await request.response.addStream(stream);
         await request.response.close();
       } finally {
@@ -219,6 +246,67 @@ class WebServerService {
     } catch (e) {
       logFunction("Error streaming download: $e");
     }
+  }
+
+  Future<void> _handleDownloadZip(HttpRequest request) async {
+    final relativePath = Uri.decodeComponent(request.uri.queryParameters['dir'] ?? '');
+    final safePath = _getSafePath(relativePath);
+
+    if (safePath == null) {
+      request.response.statusCode = HttpStatus.forbidden;
+      request.response.write('Access Denied.');
+      await request.response.close();
+      return;
+    }
+
+    final dir = Directory(safePath);
+    if (!await dir.exists()) {
+      request.response.statusCode = HttpStatus.notFound;
+      request.response.write('Directory not found.');
+      await request.response.close();
+      return;
+    }
+
+    final dirName = p.basename(safePath);
+    final zipName = '${dirName.isEmpty ? 'files' : dirName}.zip';
+
+    try {
+      final archive = Archive();
+      await _addDirToArchive(archive, dir, '');
+      final encoded = ZipEncoder().encode(archive);
+
+      request.response.statusCode = HttpStatus.ok;
+      request.response.headers.add('Content-Type', 'application/zip');
+      request.response.headers.add('Content-Disposition', 'attachment; filename="$zipName"');
+      request.response.add(encoded);
+      await request.response.close();
+      logFunction('ZIP downloaded: $zipName');
+    } catch (e) {
+      logFunction('Error creating ZIP: $e');
+      try {
+        request.response.statusCode = HttpStatus.internalServerError;
+        request.response.write('Error creating ZIP: $e');
+        await request.response.close();
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _addDirToArchive(Archive archive, Directory dir, String prefix) async {
+    try {
+      await for (final entity in dir.list()) {
+        final name = p.basename(entity.path);
+        if (name.startsWith('.')) continue;
+        final relPath = prefix.isEmpty ? name : '$prefix/$name';
+        if (entity is File) {
+          try {
+            final data = await entity.readAsBytes();
+            archive.addFile(ArchiveFile(relPath, data.length, data));
+          } catch (_) {}
+        } else if (entity is Directory) {
+          await _addDirToArchive(archive, entity, relPath);
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _handleUpload(HttpRequest request) async {
@@ -340,6 +428,12 @@ class WebServerService {
             min-height: 100vh;
             display: flex;
             overflow: hidden;
+            -webkit-overflow-scrolling: touch;
+            touch-action: manipulation;
+            overscroll-behavior: contain;
+            position: fixed;
+            width: 100%;
+            height: 100%;
         }
 
         /* Sidebar Styling (Spotify/Linear-like) */
@@ -520,7 +614,12 @@ class WebServerService {
         .workspace-content {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 32px;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: auto;
+            min-height: 0;
         }
 
         .breadcrumb-trail {
@@ -930,11 +1029,12 @@ class WebServerService {
             }
 
             .workspace {
-                height: calc(100vh - 72px);
+                height: calc(var(--vh, 1vh) * 100 - 72px);
             }
 
             .workspace-header {
                 padding: 12px 16px;
+                flex-shrink: 0;
             }
 
             .search-bar {
@@ -943,6 +1043,9 @@ class WebServerService {
 
             .workspace-content {
                 padding: 16px;
+                min-height: 0;
+                flex: 1 1 auto;
+                height: 0;
             }
 
             .playlist-header-row {
@@ -1002,6 +1105,9 @@ class WebServerService {
                 <input type="file" id="fileUploadInput" multiple style="display: none;" onchange="handleFilesSelected(event)">
                 <button class="round-button" onclick="document.getElementById('fileUploadInput').click()" title="Upload files">
                     <i data-lucide="upload-cloud"></i>
+                </button>
+                <button class="round-button" onclick="downloadZip()" id="zipBtn" title="Download current folder as ZIP">
+                    <i data-lucide="file-archive"></i>
                 </button>
                 <button class="round-button" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">
                     <i data-lucide="moon"></i>
@@ -1071,6 +1177,17 @@ class WebServerService {
         let currentDir = '';
         let allItems = [];
         let viewMode = 'list';
+
+        // Fix mobile viewport height
+        function setVH() {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', vh + 'px');
+        }
+        setVH();
+        window.addEventListener('resize', setVH);
+        window.addEventListener('orientationchange', function() {
+            setTimeout(setVH, 100);
+        });
 
         // Load files initially
         loadFiles('');
@@ -1249,6 +1366,14 @@ class WebServerService {
 
         function navigateTo(path) {
             loadFiles(path);
+        }
+
+        function downloadZip() {
+            if (currentDir === '') {
+                alert('Please navigate into a folder first.');
+                return;
+            }
+            window.location.href = '/download-zip?dir=' + encodeURIComponent(currentDir);
         }
 
         function renderBreadcrumbs(dir) {
