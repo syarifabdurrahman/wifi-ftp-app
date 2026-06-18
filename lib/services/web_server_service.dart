@@ -5,6 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 
 class WebServerService {
+  static const String version = 'v1.2.0';
   HttpServer? _server;
   final String rootPath;
   final int port;
@@ -78,6 +79,11 @@ class WebServerService {
 
     if (path == '/api/files') {
       await _handleApiFiles(request);
+      return;
+    }
+
+    if (path == '/api/storage') {
+      await _handleApiStorage(request);
       return;
     }
 
@@ -164,6 +170,36 @@ class WebServerService {
       await request.response.close();
     } catch (e) {
       request.response.statusCode = HttpStatus.internalServerError;
+      request.response.write(jsonEncode({'error': e.toString()}));
+      await request.response.close();
+    }
+  }
+
+  Future<void> _handleApiStorage(HttpRequest request) async {
+    try {
+      final result = await Process.run('df', ['-k', rootPath]);
+      final lines = result.stdout.toString().split('\n');
+      if (lines.length >= 2) {
+        final parts = lines[1].split(RegExp(r'\s+'));
+        if (parts.length >= 4) {
+          final totalKB = int.tryParse(parts[1]) ?? 0;
+          final usedKB = int.tryParse(parts[2]) ?? 0;
+          final totalGB = (totalKB / (1024 * 1024)).toStringAsFixed(1);
+          final usedGB = (usedKB / (1024 * 1024)).toStringAsFixed(1);
+          final percent = totalKB > 0 ? ((usedKB / totalKB) * 100).toStringAsFixed(0) : '0';
+          request.response.headers.contentType = ContentType.json;
+          request.response.write(jsonEncode({
+            'totalGB': totalGB,
+            'usedGB': usedGB,
+            'percent': percent,
+          }));
+          await request.response.close();
+          return;
+        }
+      }
+      throw Exception('Could not parse df output');
+    } catch (e) {
+      request.response.headers.contentType = ContentType.json;
       request.response.write(jsonEncode({'error': e.toString()}));
       await request.response.close();
     }
@@ -433,7 +469,7 @@ class WebServerService {
             color: var(--text-base);
             min-height: 100vh;
             display: flex;
-            overflow: hidden;
+            font-size: 16px;
             -webkit-overflow-scrolling: touch;
             touch-action: manipulation;
             overscroll-behavior: contain;
@@ -536,9 +572,10 @@ class WebServerService {
         .storage-bar-inner {
             background-color: var(--accent);
             height: 100%;
-            width: 80%;
+            width: 0%;
             border-radius: 3px;
             box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+            transition: width 0.5s ease;
         }
 
         /* Main Workspace Container */
@@ -1013,6 +1050,14 @@ class WebServerService {
             background: rgba(255, 255, 255, 0.16);
         }
 
+        .version-badge {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 4px 0;
+            letter-spacing: 0.5px;
+        }
+
         /* Mobile Adjustments */
         @media (max-width: 900px) {
             body {
@@ -1031,6 +1076,10 @@ class WebServerService {
             }
 
             .storage-card {
+                display: none;
+            }
+
+            .version-badge {
                 display: none;
             }
 
@@ -1094,10 +1143,11 @@ class WebServerService {
         <div class="storage-card">
             <div class="storage-card-title">Device Storage</div>
             <div class="storage-bar-outer">
-                <div class="storage-bar-inner"></div>
+                <div class="storage-bar-inner" id="storageBarInner"></div>
             </div>
-            <div class="storage-text">Using Local Network</div>
+            <div class="storage-text" id="storageText">Loading...</div>
         </div>
+        <div class="version-badge">WiFi Share $version</div>
     </aside>
 
     <!-- Main Panel Dashboard Workspace -->
@@ -1197,6 +1247,7 @@ class WebServerService {
 
         // Load files initially
         loadFiles('');
+        loadStorage();
 
         // Apply theme preferences
         if (localStorage.getItem('theme') === 'light') {
@@ -1206,6 +1257,16 @@ class WebServerService {
 
         // Initialize Lucide Icons
         setTimeout(() => lucide.createIcons(), 200);
+
+        async function loadStorage() {
+            try {
+                const res = await fetch('/api/storage');
+                const data = await res.json();
+                if (data.error) return;
+                document.getElementById('storageBarInner').style.width = data.percent + '%';
+                document.getElementById('storageText').innerText = data.usedGB + 'GB / ' + data.totalGB + 'GB';
+            } catch (_) {}
+        }
 
         function toggleTheme() {
             if (document.body.getAttribute('data-theme') === 'light') {

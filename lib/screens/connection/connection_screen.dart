@@ -201,10 +201,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                         webAddress,
                                         style: AppTheme.codeSmall.copyWith(
                                           color: isRunning ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.outline,
-                                          fontSize: 15,
                                           fontWeight: FontWeight.w600,
                                         ),
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     if (isRunning) Icon(Icons.copy, size: 18, color: Theme.of(context).colorScheme.outline),
@@ -251,10 +249,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                         ftpAddress,
                                         style: AppTheme.codeSmall.copyWith(
                                           color: isRunning ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.outline,
-                                          fontSize: 15,
                                           fontWeight: FontWeight.w600,
                                         ),
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     if (isRunning) Icon(Icons.copy, size: 18, color: Theme.of(context).colorScheme.outline),

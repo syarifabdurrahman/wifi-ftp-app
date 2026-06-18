@@ -417,6 +417,15 @@ class _FtpSettingsScreenState extends State<FtpSettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
+
+                Text(
+                  'WiFi Share v1.2.0+5',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
