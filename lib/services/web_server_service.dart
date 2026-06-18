@@ -20,7 +20,12 @@ class WebServerService {
 
   Future<void> start() async {
     try {
-      _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
+      _server = await HttpServer.bind(
+        InternetAddress.anyIPv4,
+        port,
+        shared: true,
+        backlog: 256,
+      );
       logFunction("Web Server started on http://0.0.0.0:$port");
 
       _server!.listen((HttpRequest request) async {
@@ -188,6 +193,7 @@ class WebServerService {
       final filename = p.basename(file.path);
 
       request.response.statusCode = HttpStatus.ok;
+      request.response.bufferOutput = false;
       request.response.headers.add('Content-Length', stat.size.toString());
       request.response.headers.add(
         'Content-Disposition',
@@ -276,6 +282,7 @@ class WebServerService {
       final encoded = ZipEncoder().encode(archive);
 
       request.response.statusCode = HttpStatus.ok;
+      request.response.bufferOutput = false;
       request.response.headers.add('Content-Type', 'application/zip');
       request.response.headers.add('Content-Disposition', 'attachment; filename="$zipName"');
       request.response.add(encoded);
@@ -349,11 +356,9 @@ class WebServerService {
     int transferred = 0;
     
     try {
-      sink = file.openWrite();
-      await request.listen((chunk) {
-        sink!.add(chunk);
-        transferred += chunk.length;
-      }).asFuture();
+      sink = file.openWrite(mode: FileMode.write);
+      await request.cast<List<int>>().pipe(sink);
+      transferred = await file.length();
       
       request.response.statusCode = HttpStatus.ok;
       request.response.write(jsonEncode({'success': true, 'path': safeFilePath}));
@@ -362,6 +367,7 @@ class WebServerService {
       request.response.statusCode = HttpStatus.internalServerError;
       request.response.write("Upload failed: $e");
     } finally {
+      await sink?.flush();
       await sink?.close();
       await request.response.close();
       if (transferred > 0) {
