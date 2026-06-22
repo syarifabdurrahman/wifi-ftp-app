@@ -34,6 +34,8 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   FileFilter _fileFilter = FileFilter.all;
+  final Set<String> _selectedPaths = {};
+  bool _isSelectionMode = false;
 
   @override
   void initState() {
@@ -88,8 +90,28 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('File Explorer'),
+        title: _isSelectionMode
+            ? Text('${_selectedPaths.length} selected')
+            : const Text('File Explorer'),
+        leading: _isSelectionMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() {
+                  _isSelectionMode = false;
+                  _selectedPaths.clear();
+                }),
+              )
+            : null,
         actions: [
+          if (_isSelectionMode)
+            IconButton(
+              icon: Icon(Icons.delete_outline_rounded,
+                  color: _selectedPaths.isEmpty ? null : Colors.red),
+              tooltip: 'Delete selected',
+              onPressed: _selectedPaths.isEmpty
+                  ? null
+                  : () => _confirmBatchDelete(context),
+            ),
           // Storage root selector
           Consumer<FileProvider>(
             builder: (context, fp, _) {
@@ -350,6 +372,8 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                             itemBuilder: (context, index) {
                               final fileEntity = displayedFiles[index];
                               final isDirectory = fileEntity is Directory;
+                              final filePath = fileEntity.path;
+                              final isSelected = _selectedPaths.contains(filePath);
 
                               // Use safe stat access
                               FileStat stat;
@@ -359,29 +383,50 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                                 return const SizedBox.shrink();
                               }
 
+                              void onToggleSelect() {
+                                setState(() {
+                                  if (_selectedPaths.contains(filePath)) {
+                                    _selectedPaths.remove(filePath);
+                                    if (_selectedPaths.isEmpty) {
+                                      _isSelectionMode = false;
+                                    }
+                                  } else {
+                                    _selectedPaths.add(filePath);
+                                  }
+                                });
+                              }
+
                               if (isDirectory) {
                                 return _buildFolderItem(
                                   context,
                                   onTap: () {
-                                    fileProvider.setPath(fileEntity.path);
-                                    _searchController.clear();
-                                    _searchQuery = '';
+                                    if (_isSelectionMode) {
+                                      onToggleSelect();
+                                    } else {
+                                      fileProvider.setPath(filePath);
+                                      _searchController.clear();
+                                      _searchQuery = '';
+                                    }
                                   },
                                   onDelete: () => _confirmDelete(context, fileProvider, fileEntity),
                                   icon: Icons.folder_rounded,
-                                  name: p.basename(fileEntity.path),
+                                  name: p.basename(filePath),
                                   subtitle: 'Folder • ${_formatDate(stat.modified)}',
                                   color: Theme.of(context).colorScheme.primary,
+                                  isSelected: isSelected,
+                                  onToggleSelect: _isSelectionMode ? onToggleSelect : null,
                                 );
                               } else {
                                 return _buildFileItem(
                                   context,
-                                  name: p.basename(fileEntity.path),
+                                  name: p.basename(filePath),
                                   size: _formatBytes(stat.size),
                                   date: _formatDate(stat.modified),
-                                  extension: p.extension(fileEntity.path).replaceAll('.', '').toUpperCase(),
-                                  path: fileEntity.path,
+                                  extension: p.extension(filePath).replaceAll('.', '').toUpperCase(),
+                                  path: filePath,
                                   onDelete: () => _confirmDelete(context, fileProvider, fileEntity),
+                                  isSelected: isSelected,
+                                  onToggleSelect: _isSelectionMode ? onToggleSelect : null,
                                 );
                               }
                             },
@@ -507,6 +552,65 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     );
   }
 
+  void _confirmBatchDelete(BuildContext context) {
+    final fileProvider = context.read<FileProvider>();
+    final count = _selectedPaths.length;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.error),
+              const SizedBox(width: 8),
+              Text('Delete $count items'),
+            ],
+          ),
+          content: Text('Are you sure you want to permanently delete $count selected item${count > 1 ? 's' : ''}? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final entities = _selectedPaths
+                    .map((p) => FileSystemEntity.typeSync(p) == FileSystemEntityType.directory
+                        ? Directory(p) as FileSystemEntity
+                        : File(p) as FileSystemEntity)
+                    .toList();
+                final successCount = await fileProvider.deleteMultiple(entities);
+                if (context.mounted) {
+                  setState(() {
+                    _isSelectionMode = false;
+                    _selectedPaths.clear();
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(successCount == count
+                          ? 'Successfully deleted $count item${count > 1 ? 's' : ''}'
+                          : 'Deleted $successCount/$count item${count > 1 ? 's' : ''}'),
+                      backgroundColor: successCount == count ? Colors.green : Colors.orange,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showCreateFolderDialog(BuildContext context) {
     final controller = TextEditingController();
     final fileProvider = context.read<FileProvider>();
@@ -574,19 +678,47 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     required String name,
     required String subtitle,
     required Color color,
+    bool isSelected = false,
+    VoidCallback? onToggleSelect,
   }) {
     return InkWell(
-      onTap: onTap,
+      onTap: onToggleSelect ?? onTap,
+      onLongPress: onToggleSelect != null
+          ? () {}
+          : () {
+              setState(() {
+                _isSelectionMode = true;
+                _selectedPaths.clear();
+              });
+              onToggleSelect!();
+            },
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppTheme.getCardColor(context),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          color: isSelected
+              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+              : AppTheme.getCardColor(context),
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+                : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
+            if (_isSelectionMode)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  isSelected ? Icons.check_box : Icons.check_box_outline_blank,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outline,
+                  size: 24,
+                ),
+              ),
             Container(
               width: 48,
               height: 48,
@@ -617,32 +749,33 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                 ],
               ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    if (value == 'delete') {
-                      onDelete();
-                    }
-                  },
-                  icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.outlineVariant),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                          SizedBox(width: 8),
-                          Text('Delete', style: TextStyle(color: Colors.red)),
-                        ],
+            if (!_isSelectionMode)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'delete') {
+                        onDelete();
+                      }
+                    },
+                    icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.outlineVariant),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                            SizedBox(width: 8),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant),
-              ],
-            ),
+                    ],
+                  ),
+                  Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.outlineVariant),
+                ],
+              ),
           ],
         ),
       ),
@@ -657,6 +790,8 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     required String extension,
     required String path,
     required VoidCallback onDelete,
+    bool isSelected = false,
+    VoidCallback? onToggleSelect,
   }) {
     // Determine color based on extension
     Color extColor = Theme.of(context).colorScheme.secondary;
@@ -677,7 +812,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     }
 
     return InkWell(
-      onTap: () {
+      onTap: onToggleSelect ?? () {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -685,16 +820,42 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
           ),
         );
       },
+      onLongPress: onToggleSelect != null
+          ? () {}
+          : () {
+              setState(() {
+                _isSelectionMode = true;
+                _selectedPaths.clear();
+              });
+              onToggleSelect!();
+            },
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppTheme.getCardColor(context),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          color: isSelected
+              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+              : AppTheme.getCardColor(context),
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+                : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
+            if (_isSelectionMode)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  isSelected ? Icons.check_box : Icons.check_box_outline_blank,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outline,
+                  size: 24,
+                ),
+              ),
             Container(
               width: 48,
               height: 48,
@@ -736,26 +897,27 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                 ],
               ),
             ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'delete') {
-                  onDelete();
-                }
-              },
-              icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.outlineVariant),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                      SizedBox(width: 8),
-                      Text('Delete', style: TextStyle(color: Colors.red)),
-                    ],
+            if (!_isSelectionMode)
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'delete') {
+                    onDelete();
+                  }
+                },
+                icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.outlineVariant),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                        SizedBox(width: 8),
+                        Text('Delete', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),

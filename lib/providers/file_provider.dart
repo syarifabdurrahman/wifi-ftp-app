@@ -235,6 +235,25 @@ class FileProvider with ChangeNotifier {
     }
   }
 
+  // Delete multiple files/folders, returns count of successful deletions
+  Future<int> deleteMultiple(List<FileSystemEntity> entities) async {
+    int successCount = 0;
+    for (final entity in entities) {
+      try {
+        if (entity is Directory) {
+          await entity.delete(recursive: true);
+        } else if (entity is File) {
+          await entity.delete();
+        }
+        successCount++;
+      } catch (e) {
+        debugPrint('Error deleting ${entity.path}: $e');
+      }
+    }
+    await _loadFiles();
+    return successCount;
+  }
+
   // Helper method for the mock storage values
   void updateStorageInfo(double total, double used) {
     _totalStorageGB = total;

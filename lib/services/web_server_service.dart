@@ -5,7 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 
 class WebServerService {
-  static const String version = 'v1.2.0';
+  static const String version = 'v1.3.0';
   HttpServer? _server;
   final String rootPath;
   final int port;
@@ -104,6 +104,11 @@ class WebServerService {
 
     if (path == '/api/mkdir' && request.method == 'POST') {
       await _handleMkdir(request);
+      return;
+    }
+
+    if (path == '/api/delete' && request.method == 'POST') {
+      await _handleDelete(request);
       return;
     }
 
@@ -505,6 +510,70 @@ class WebServerService {
       request.response.statusCode = HttpStatus.internalServerError;
       request.response.headers.contentType = ContentType.json;
       request.response.write(jsonEncode({'error': e.toString()}));
+    }
+    await request.response.close();
+  }
+
+  Future<void> _handleDelete(HttpRequest request) async {
+    request.response.headers.contentType = ContentType.json;
+    try {
+      final chunks = await request.toList();
+      final allBytes = <int>[];
+      for (final c in chunks) {
+        allBytes.addAll(c);
+      }
+      final body = utf8.decode(allBytes);
+      final data = jsonDecode(body) as Map<String, dynamic>;
+      final paths = data['paths'] as List<dynamic>?;
+
+      if (paths == null || paths.isEmpty) {
+        request.response.statusCode = HttpStatus.badRequest;
+        request.response.write(jsonEncode({'error': 'No paths provided'}));
+        await request.response.close();
+        return;
+      }
+
+      int deleted = 0;
+      int failed = 0;
+      final errors = <String>[];
+
+      for (final path in paths) {
+        final safePath = _getSafePath(path as String);
+        if (safePath == null) {
+          failed++;
+          errors.add('Access denied: $path');
+          continue;
+        }
+
+        try {
+          final entity = FileSystemEntity.typeSync(safePath);
+          if (entity == FileSystemEntityType.notFound) {
+            failed++;
+            errors.add('Not found: $path');
+            continue;
+          }
+          if (entity == FileSystemEntityType.directory) {
+            await Directory(safePath).delete(recursive: true);
+          } else {
+            await File(safePath).delete();
+          }
+          deleted++;
+        } catch (e) {
+          failed++;
+          errors.add('$path: $e');
+        }
+      }
+
+      request.response.statusCode = HttpStatus.ok;
+      request.response.write(jsonEncode({
+        'success': true,
+        'deleted': deleted,
+        'failed': failed,
+        'errors': errors,
+      }));
+    } catch (e) {
+      request.response.statusCode = HttpStatus.badRequest;
+      request.response.write(jsonEncode({'error': 'Invalid request: $e'}));
     }
     await request.response.close();
   }
@@ -1220,6 +1289,37 @@ class WebServerService {
             background: var(--accent-hover);
         }
 
+        .modal-btn-danger {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .modal-btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        /* File checkbox */
+        .file-checkbox {
+            width: 18px; height: 18px;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .playlist-row.selected {
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .spotify-card.selected {
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .header-checkbox {
+            width: 18px; height: 18px;
+            cursor: pointer;
+            accent-color: var(--accent);
+            margin-left: 13px;
+        }
+
         /* Custom Scrollbars */
         ::-webkit-scrollbar {
             width: 6px;
@@ -1360,6 +1460,9 @@ class WebServerService {
                 <button class="round-button" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">
                     <i data-lucide="moon"></i>
                 </button>
+                <button class="round-button" id="deleteSelectedBtn" onclick="deleteSelected()" title="Delete selected" style="display: none;">
+                    <i data-lucide="trash-2"></i>
+                </button>
             </div>
         </header>
 
@@ -1383,7 +1486,7 @@ class WebServerService {
             <!-- List View Wrapper -->
             <div id="listViewWrapper">
                 <div class="playlist-header-row">
-                    <div class="playlist-index">#</div>
+                    <div style="display: flex; align-items: center;"><input type="checkbox" class="header-checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)"></div>
                     <div>Title</div>
                     <div class="playlist-modified">Date Modified</div>
                     <div class="playlist-size">Size</div>
@@ -1442,6 +1545,17 @@ class WebServerService {
         let currentDir = '';
         let allItems = [];
         let viewMode = 'list';
+        let selectedItems = new Set();
+
+        function updateDeleteButton() {
+            const btn = document.getElementById('deleteSelectedBtn');
+            if (selectedItems.size > 0) {
+                btn.style.display = '';
+                btn.title = selectedItems.size + ' selected';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
 
         // Fix mobile viewport height
         function setVH() {
@@ -1568,16 +1682,21 @@ class WebServerService {
 
             if (viewMode === 'list') {
                 listItems.innerHTML = '';
-                items.forEach((item, index) => {
+                items.forEach((item) => {
                     const row = document.createElement('div');
                     row.className = 'playlist-row';
+                    row.dataset.path = item.path;
+                    if (selectedItems.has(item.path)) row.classList.add('selected');
                     
                     const isDir = item.isDirectory;
                     const iconName = getFileIcon(item.extension, isDir);
+                    const checked = selectedItems.has(item.path) ? 'checked' : '';
                     
                     row.innerHTML = `
-                        <div class="playlist-index">\${index + 1}</div>
-                        <div class="playlist-title-cell">
+                        <div style="display: flex; align-items: center;">
+                            <input type="checkbox" class="file-checkbox" \${checked} onchange="toggleSelectItem('\${item.path}', this.checked); event.stopPropagation();">
+                        </div>
+                        <div class="playlist-title-cell" style="cursor: pointer;">
                             <div class="playlist-icon-box">
                                 <i data-lucide="\${iconName}"></i>
                             </div>
@@ -1594,9 +1713,20 @@ class WebServerService {
                         </div>
                     `;
 
+                    const titleCell = row.querySelector('.playlist-title-cell');
                     if (isDir) {
-                        row.onclick = () => navigateTo(item.path);
+                        titleCell.onclick = () => navigateTo(item.path);
+                    } else {
+                        titleCell.onclick = () => downloadFile(item.path, item.name);
                     }
+
+                    row.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        const cb = row.querySelector('.file-checkbox');
+                        cb.checked = !cb.checked;
+                        toggleSelectItem(item.path, cb.checked);
+                    });
+
                     listItems.appendChild(row);
                 });
             } else {
@@ -1604,15 +1734,21 @@ class WebServerService {
                 items.forEach(item => {
                     const card = document.createElement('div');
                     card.className = 'spotify-card';
+                    card.dataset.path = item.path;
+                    if (selectedItems.has(item.path)) card.classList.add('selected');
                     
                     const isDir = item.isDirectory;
                     const iconName = getFileIcon(item.extension, isDir);
+                    const checked = selectedItems.has(item.path) ? 'checked' : '';
                     
                     card.innerHTML = `
-                        <div class="spotify-card-icon">
+                        <div style="position: absolute; top: 8px; left: 8px; z-index: 2;">
+                            <input type="checkbox" class="file-checkbox" \${checked} onchange="toggleSelectItem('\${item.path}', this.checked); event.stopPropagation();">
+                        </div>
+                        <div class="spotify-card-icon" style="cursor: pointer;">
                             <i data-lucide="\${iconName}" style="width: 48px; height: 48px;"></i>
                         </div>
-                        <div class="spotify-card-info">
+                        <div class="spotify-card-info" style="cursor: pointer;">
                             <div class="spotify-card-name" title="\${item.name}">\${item.name}</div>
                             <div class="spotify-card-meta">\${isDir ? 'Folder' : formatBytes(item.size)}</div>
                         </div>
@@ -1623,15 +1759,27 @@ class WebServerService {
                         `}
                     `;
 
-                    if (isDir) {
-                        card.onclick = () => navigateTo(item.path);
-                    }
+                    card.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        const cb = card.querySelector('.file-checkbox');
+                        cb.checked = !cb.checked;
+                        toggleSelectItem(item.path, cb.checked);
+                    });
+
+                    const info = card.querySelector('.spotify-card-info');
+                    const iconArea = card.querySelector('.spotify-card-icon');
+                    const clickHandler = isDir
+                        ? () => navigateTo(item.path)
+                        : () => downloadFile(item.path, item.name);
+                    info.onclick = clickHandler;
+                    iconArea.onclick = clickHandler;
+
                     gridItems.appendChild(card);
                 });
             }
 
-            // Bind/Render Icons
             lucide.createIcons();
+            updateDeleteButton();
         }
 
         function handleSearch() {
@@ -1722,6 +1870,56 @@ class WebServerService {
 
         let activeXhrs = new Set();
         let uploadCancelled = false;
+
+        function toggleSelectItem(path, checked) {
+            if (checked) {
+                selectedItems.add(path);
+            } else {
+                selectedItems.delete(path);
+            }
+            document.getElementById('selectAllCheckbox').checked =
+                selectedItems.size === allItems.length && allItems.length > 0;
+            const rows = document.querySelectorAll('.playlist-row, .spotify-card');
+            rows.forEach(el => {
+                if (el.dataset.path === path) {
+                    el.classList.toggle('selected', checked);
+                }
+            });
+            updateDeleteButton();
+        }
+
+        function toggleSelectAll(checked) {
+            selectedItems.clear();
+            if (checked) {
+                allItems.forEach(item => selectedItems.add(item.path));
+            }
+            document.querySelectorAll('.file-checkbox').forEach(cb => cb.checked = checked);
+            document.querySelectorAll('.playlist-row, .spotify-card').forEach(el => {
+                el.classList.toggle('selected', checked && selectedItems.has(el.dataset.path));
+            });
+            updateDeleteButton();
+        }
+
+        function deleteSelected() {
+            const paths = Array.from(selectedItems);
+            if (paths.length === 0) return;
+            const msg = 'Delete ' + paths.length + ' selected item' + (paths.length > 1 ? 's' : '') + '?';
+            if (!confirm(msg)) return;
+            fetch('/api/delete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({paths: paths}),
+            }).then(r => r.json()).then(data => {
+                selectedItems.clear();
+                updateDeleteButton();
+                loadFiles(currentDir);
+                if (data.failed > 0) {
+                    alert('Deleted ' + data.deleted + ', failed: ' + data.failed + '\n' + data.errors.join('\n'));
+                }
+            }).catch(() => {
+                alert('Failed to delete files');
+            });
+        }
 
         function cancelUpload() {
             uploadCancelled = true;
