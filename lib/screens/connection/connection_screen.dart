@@ -54,8 +54,20 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       await ftpProvider.stopServer();
     } else {
       bool hasPermission = true;
-      if (Platform.isAndroid || Platform.isIOS) {
-        hasPermission = await Permission.manageExternalStorage.request().isGranted || await Permission.storage.request().isGranted;
+      if (Platform.isAndroid) {
+        if (await Permission.manageExternalStorage.request().isGranted) {
+          hasPermission = true;
+        } else {
+          if (await Permission.storage.request().isGranted) {
+            hasPermission = true;
+          } else {
+            hasPermission = false;
+            openAppSettings();
+          }
+        }
+        if (await Permission.notification.request().isGranted) {
+          // Notification permission granted
+        }
       }
       
       if (hasPermission) {

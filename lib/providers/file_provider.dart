@@ -130,6 +130,9 @@ class FileProvider with ChangeNotifier {
             await Permission.storage.request();
           }
         }
+        if (await Permission.notification.request().isGranted) {
+          // Notification permission granted
+        }
       }
 
       final dir = Directory(_currentPath);

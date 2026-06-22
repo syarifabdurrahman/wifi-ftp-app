@@ -259,10 +259,9 @@ packages:
   ftp_server:
     dependency: "direct main"
     description:
-      name: ftp_server
-      sha256: "8ec9848ecef0a6a390be305da2464260a016b59f3521ae8861f95eab1736a59d"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/ftp_server"
+      relative: true
+    source: path
     version: "2.3.2"
   glob:
     dependency: transitive

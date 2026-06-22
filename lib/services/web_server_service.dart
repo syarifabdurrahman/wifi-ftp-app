@@ -102,6 +102,11 @@ class WebServerService {
       return;
     }
 
+    if (path == '/api/mkdir' && request.method == 'POST') {
+      await _handleMkdir(request);
+      return;
+    }
+
     // Default 404
     request.response.statusCode = HttpStatus.notFound;
     request.response.write("404 Not Found");
@@ -388,28 +393,120 @@ class WebServerService {
     }
 
     final file = File(safeFilePath);
-    IOSink? sink;
     int transferred = 0;
-    
+
     try {
-      sink = file.openWrite(mode: FileMode.write);
-      await request.cast<List<int>>().pipe(sink);
-      transferred = await file.length();
-      
+      final sink = file.openWrite(mode: FileMode.write);
+      bool sinkClosed = false;
+      try {
+        await request.cast<List<int>>().pipe(sink);
+        sinkClosed = true;
+      } on SocketException catch (_) {
+        // Client disconnected/cancelled
+      } catch (e) {
+        logFunction("Upload stream error: $e");
+      } finally {
+        if (!sinkClosed) {
+          try { await sink.close(); } catch (_) {}
+        }
+      }
+
+      if (await file.exists()) {
+        transferred = await file.length();
+      }
+
       request.response.statusCode = HttpStatus.ok;
       request.response.write(jsonEncode({'success': true, 'path': safeFilePath}));
+      await request.response.close();
     } catch (e) {
       logFunction("Error handling upload: $e");
-      request.response.statusCode = HttpStatus.internalServerError;
-      request.response.write("Upload failed: $e");
-    } finally {
-      await sink?.flush();
-      await sink?.close();
-      await request.response.close();
-      if (transferred > 0) {
-        logFunction("$transferred bytes transferred via Web Upload");
-      }
+      try {
+        request.response.statusCode = HttpStatus.internalServerError;
+        request.response.write("Upload failed: $e");
+        await request.response.close();
+      } catch (_) {}
     }
+    if (transferred > 0) {
+      logFunction("$transferred bytes transferred via Web Upload");
+    }
+  }
+
+  Future<void> _handleMkdir(HttpRequest request) async {
+    String body;
+    try {
+      final buffer = StringBuffer();
+      await for (final chunk in request) {
+        buffer.write(utf8.decode(chunk, allowMalformed: true));
+      }
+      body = buffer.toString();
+    } catch (e) {
+      request.response.statusCode = HttpStatus.badRequest;
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'error': 'Failed to read request body'}));
+      await request.response.close();
+      return;
+    }
+
+    Map<String, dynamic> data;
+    try {
+      data = jsonDecode(body) as Map<String, dynamic>;
+    } catch (_) {
+      request.response.statusCode = HttpStatus.badRequest;
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'error': 'Invalid JSON'}));
+      await request.response.close();
+      return;
+    }
+
+    final dirName = data['name'] as String?;
+    if (dirName == null || dirName.trim().isEmpty) {
+      request.response.statusCode = HttpStatus.badRequest;
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'error': 'Folder name is required'}));
+      await request.response.close();
+      return;
+    }
+
+    final relativeDir = data['dir'] as String? ?? '';
+    final safeDirPath = _getSafePath(relativeDir);
+
+    if (safeDirPath == null) {
+      request.response.statusCode = HttpStatus.forbidden;
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'error': 'Access Denied'}));
+      await request.response.close();
+      return;
+    }
+
+    final newDir = Directory(p.normalize(p.join(safeDirPath, dirName.trim())));
+    if (!p.isWithin(safeDirPath, newDir.path)) {
+      request.response.statusCode = HttpStatus.forbidden;
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'error': 'Invalid folder name'}));
+      await request.response.close();
+      return;
+    }
+
+    if (await newDir.exists()) {
+      request.response.statusCode = HttpStatus.conflict;
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'error': 'Folder already exists'}));
+      await request.response.close();
+      return;
+    }
+
+    try {
+      await newDir.create(recursive: true);
+      request.response.statusCode = HttpStatus.ok;
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'success': true, 'path': newDir.path}));
+      logFunction("Folder created: ${newDir.path}");
+    } catch (e) {
+      request.response.statusCode = HttpStatus.internalServerError;
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'error': e.toString()}));
+    }
+    await request.response.close();
   }
 
   String? _getSafePath(String relPath) {
@@ -1031,6 +1128,98 @@ class WebServerService {
             font-weight: 700;
         }
 
+        /* Modal Dialog */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(9, 11, 17, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 28px;
+            width: 360px;
+            max-width: 90vw;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .modal-input {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: var(--text-base);
+            font-size: 14px;
+            outline: none;
+            width: 100%;
+        }
+
+        .modal-input:focus {
+            border-color: var(--accent);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .modal-btn-cancel {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-btn-cancel:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .modal-btn-create {
+            background: var(--accent);
+            color: #05060a;
+        }
+
+        .modal-btn-create:hover {
+            background: var(--accent-hover);
+        }
+
         /* Custom Scrollbars */
         ::-webkit-scrollbar {
             width: 6px;
@@ -1159,6 +1348,9 @@ class WebServerService {
             </div>
             <div class="header-actions">
                 <input type="file" id="fileUploadInput" multiple style="display: none;" onchange="handleFilesSelected(event)">
+                <button class="round-button" onclick="openNewFolderDialog()" title="New folder">
+                    <i data-lucide="folder-plus"></i>
+                </button>
                 <button class="round-button" onclick="document.getElementById('fileUploadInput').click()" title="Upload files">
                     <i data-lucide="upload-cloud"></i>
                 </button>
@@ -1220,13 +1412,30 @@ class WebServerService {
     <!-- Upload Toast -->
     <div class="upload-toast" id="uploadToast">
         <div class="toast-header">
-            <div class="toast-title"><i data-lucide="upload"></i> <span>Uploading...</span></div>
-            <span id="uploadPercent" style="font-size: 12px; color: var(--text-muted);">0%</span>
+            <div class="toast-title" id="toastTitle"><i data-lucide="upload"></i> <span>Uploading...</span></div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="uploadPercent" style="font-size: 12px; color: var(--text-muted);">0%</span>
+                <button id="cancelUploadBtn" onclick="cancelUpload()" style="display: none; background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;">
+                    <i data-lucide="x-circle"></i>
+                </button>
+            </div>
         </div>
         <div class="toast-progress-bar">
             <div class="toast-progress-fill" id="uploadProgressFill"></div>
         </div>
         <div id="uploadFilename" style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+    </div>
+
+    <!-- New Folder Modal -->
+    <div class="modal-overlay" id="newFolderModal">
+        <div class="modal-box">
+            <div class="modal-title">New Folder</div>
+            <input class="modal-input" id="newFolderNameInput" type="text" placeholder="Enter folder name..." autofocus>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeNewFolderDialog()">Cancel</button>
+                <button class="modal-btn modal-btn-create" onclick="createNewFolder()">Create</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1378,9 +1587,9 @@ class WebServerService {
                         <div class="playlist-size">\${isDir ? '--' : formatBytes(item.size)}</div>
                         <div class="playlist-action-cell">
                             \${isDir ? '' : `
-                                <a class="playlist-row-btn" href="/download?file=\${encodeURIComponent(item.path)}" onclick="event.stopPropagation()">
+                                <button class="playlist-row-btn" onclick="event.stopPropagation(); downloadFile('\${item.path}', '\${item.name}')">
                                     <i data-lucide="download"></i>
-                                </a>
+                                </button>
                             `}
                         </div>
                     `;
@@ -1408,9 +1617,9 @@ class WebServerService {
                             <div class="spotify-card-meta">\${isDir ? 'Folder' : formatBytes(item.size)}</div>
                         </div>
                         \${isDir ? '' : `
-                            <a class="spotify-card-play-btn" href="/download?file=\${encodeURIComponent(item.path)}" onclick="event.stopPropagation()">
+                            <button class="spotify-card-play-btn" onclick="event.stopPropagation(); downloadFile('\${item.path}', '\${item.name}')">
                                 <i data-lucide="download"></i>
-                            </a>
+                            </button>
                         `}
                     `;
 
@@ -1511,52 +1720,215 @@ class WebServerService {
             event.target.value = ''; // reset
         }
 
-        async function uploadFiles(files) {
+        let activeXhrs = new Set();
+        let uploadCancelled = false;
+
+        function cancelUpload() {
+            uploadCancelled = true;
+            for (const xhr of activeXhrs) {
+                xhr.abort();
+            }
+            activeXhrs.clear();
+            document.getElementById('cancelUploadBtn').style.display = 'none';
+            document.getElementById('uploadToast').classList.remove('show');
+            setTimeout(() => loadFiles(currentDir), 500);
+        }
+
+        function showToast(title, mode) {
             const toast = document.getElementById('uploadToast');
+            document.getElementById('toastTitle').innerHTML = '<i data-lucide="' + (mode === 'upload' ? 'upload' : 'download') + '"></i> <span>' + title + '</span>';
+            document.getElementById('cancelUploadBtn').style.display = '';
+            toast.classList.add('show');
+            setTimeout(() => lucide.createIcons(), 50);
+        }
+
+        function hideToast(delay) {
+            setTimeout(() => {
+                document.getElementById('uploadToast').classList.remove('show');
+                document.getElementById('cancelUploadBtn').style.display = 'none';
+            }, delay || 0);
+        }
+
+        async function uploadFiles(files) {
             const progressFill = document.getElementById('uploadProgressFill');
             const percentText = document.getElementById('uploadPercent');
             const filenameText = document.getElementById('uploadFilename');
             
-            toast.classList.add('show');
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                filenameText.innerText = `(\${i+1}/\${files.length}) \${file.name}`;
-                progressFill.style.width = '0%';
-                percentText.innerText = '0%';
-                
-                try {
-                    await new Promise((resolve, reject) => {
-                        const xhr = new XMLHttpRequest();
-                        xhr.open('POST', `/upload?dir=\${encodeURIComponent(currentDir)}&filename=\${encodeURIComponent(file.name)}`);
-                        
-                        xhr.upload.onprogress = (e) => {
-                            if (e.lengthComputable) {
-                                const percent = Math.round((e.loaded / e.total) * 100);
-                                progressFill.style.width = percent + '%';
-                                percentText.innerText = percent + '%';
-                            }
-                        };
-                        
-                        xhr.onload = () => {
-                            if (xhr.status === 200) resolve();
-                            else reject(xhr.responseText);
-                        };
-                        
-                        xhr.onerror = () => reject("Network Error");
-                        xhr.send(file);
-                    });
-                } catch (e) {
-                    console.error("Upload failed for " + file.name, e);
+            uploadCancelled = false;
+            showToast('Uploading...', 'upload');
+
+            const totalSize = Array.from(files).reduce((s, f) => s + f.size, 0);
+            let totalLoaded = 0;
+            let completed = 0;
+            const concurrency = 3;
+
+            function updateProgress() {
+                const pct = totalSize > 0 ? Math.round((totalLoaded / totalSize) * 100) : 0;
+                progressFill.style.width = pct + '%';
+                percentText.innerText = pct + '%';
+                filenameText.innerText = `\${completed}/\${files.length} files`;
+            }
+
+            async function uploadOne(file) {
+                if (uploadCancelled) return;
+                return new Promise((resolve) => {
+                    const xhr = new XMLHttpRequest();
+                    activeXhrs.add(xhr);
+                    xhr.open('POST', `/upload?dir=\${encodeURIComponent(currentDir)}&filename=\${encodeURIComponent(file.name)}`);
+
+                    xhr.upload.onprogress = (e) => {
+                        if (uploadCancelled) { xhr.abort(); resolve(); return; }
+                        if (e.lengthComputable) {
+                            totalLoaded += e.loaded - (xhr._lastLoaded || 0);
+                            xhr._lastLoaded = e.loaded;
+                            updateProgress();
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        activeXhrs.delete(xhr);
+                        totalLoaded += file.size - (xhr._lastLoaded || 0);
+                        completed++;
+                        updateProgress();
+                        resolve();
+                    };
+
+                    xhr.onerror = () => {
+                        activeXhrs.delete(xhr);
+                        totalLoaded += file.size;
+                        completed++;
+                        updateProgress();
+                        resolve();
+                    };
+
+                    xhr.onabort = () => {
+                        activeXhrs.delete(xhr);
+                    };
+
+                    xhr.send(file);
+                });
+            }
+
+            const queue = Array.from(files);
+            async function worker() {
+                while (queue.length > 0 && !uploadCancelled) {
+                    const file = queue.shift();
+                    await uploadOne(file);
                 }
             }
+
+            const workers = [];
+            for (let i = 0; i < Math.min(concurrency, files.length); i++) {
+                workers.push(worker());
+            }
+            await Promise.all(workers);
             
-            filenameText.innerText = "Upload Complete!";
-            setTimeout(() => {
-                toast.classList.remove('show');
-                loadFiles(currentDir);
-            }, 2000);
+            if (!uploadCancelled) {
+                filenameText.innerText = "Upload Complete!";
+                hideToast(2000);
+                setTimeout(() => loadFiles(currentDir), 2000);
+            }
         }
+
+        async function downloadFile(filePath, fileName) {
+            const progressFill = document.getElementById('uploadProgressFill');
+            const percentText = document.getElementById('uploadPercent');
+            const filenameText = document.getElementById('uploadFilename');
+
+            showToast('Downloading...', 'download');
+            filenameText.innerText = fileName;
+
+            const xhr = new XMLHttpRequest();
+            activeXhrs.add(xhr);
+            xhr.responseType = 'blob';
+
+            xhr.open('GET', '/download?file=' + encodeURIComponent(filePath));
+
+            xhr.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    progressFill.style.width = pct + '%';
+                    percentText.innerText = pct + '%';
+                }
+            };
+
+            xhr.onload = () => {
+                activeXhrs.delete(xhr);
+                if (xhr.status === 200) {
+                    const blob = xhr.response;
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+                filenameText.innerText = 'Download Complete';
+                hideToast(2000);
+            };
+
+            xhr.onerror = () => {
+                activeXhrs.delete(xhr);
+                filenameText.innerText = 'Download Failed';
+                hideToast(2000);
+            };
+
+            xhr.onabort = () => {
+                activeXhrs.delete(xhr);
+                filenameText.innerText = 'Download Cancelled';
+                hideToast(1000);
+            };
+
+            xhr.send();
+        }
+
+        // New Folder Dialog
+        function openNewFolderDialog() {
+            document.getElementById('newFolderModal').classList.add('active');
+            document.getElementById('newFolderNameInput').value = '';
+            setTimeout(() => document.getElementById('newFolderNameInput').focus(), 100);
+        }
+
+        function closeNewFolderDialog() {
+            document.getElementById('newFolderModal').classList.remove('active');
+        }
+
+        async function createNewFolder() {
+            const name = document.getElementById('newFolderNameInput').value.trim();
+            if (!name) {
+                alert('Please enter a folder name.');
+                return;
+            }
+
+            const modal = document.getElementById('newFolderModal');
+            modal.classList.remove('active');
+
+            try {
+                const res = await fetch('/api/mkdir', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, dir: currentDir }),
+                });
+                const data = await res.json();
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    loadFiles(currentDir);
+                }
+            } catch (e) {
+                alert('Failed to create folder: ' + e.message);
+            }
+        }
+
+        // Close modal on Enter key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeNewFolderDialog();
+            if (e.key === 'Enter' && document.getElementById('newFolderModal').classList.contains('active')) {
+                createNewFolder();
+            }
+        });
 
         // Drag and drop support
         const dragOverlay = document.getElementById('dragOverlay');
