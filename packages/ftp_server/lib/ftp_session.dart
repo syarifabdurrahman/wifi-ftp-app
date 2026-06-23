@@ -277,6 +277,7 @@ class FtpSession {
     }
     return result.then((value) {
       dataSocket = value;
+      dataSocket!.setOption(SocketOption.tcpNoDelay, true);
     }).catchError((Object e) {
       // dataListener was closed before a client connected (e.g. session ended)
       logger.generalLog('Data connection wait cancelled: $e');
@@ -356,6 +357,9 @@ class FtpSession {
         );
       } else {
         dataSocket = await Socket.connect(ip, port);
+      }
+      if (dataSocket != null) {
+        dataSocket!.setOption(SocketOption.tcpNoDelay, true);
       }
       sendResponse('200 Active mode connection established');
     } catch (e) {
@@ -553,40 +557,12 @@ class FtpSession {
       transferInProgress = true;
 
       if (await file.exists()) {
-        Stream<List<int>> fileStream = file.openRead();
-
-        StreamSubscription<List<int>>? subscription;
-        subscription = fileStream.listen(
-          (data) {
-            if (transferInProgress && dataSocket != null) {
-              try {
-                dataSocket!.add(data);
-              } catch (e) {
-                logger.generalLog('Error writing to data socket: $e');
-                transferInProgress = false;
-                subscription?.cancel();
-                _closeDataSocket();
-              }
-            }
-          },
-          onDone: () async {
-            if (transferInProgress) {
-              transferInProgress = false;
-              await _closeDataSocket();
-              sendResponse('226 Transfer complete');
-            }
-          },
-          onError: (error) async {
-            logger.generalLog('Error reading from file: $error');
-            if (transferInProgress) {
-              sendResponse('426 Connection closed; transfer aborted');
-              transferInProgress = false;
-              await _closeDataSocket();
-            }
-          },
-          cancelOnError: true,
-        );
+        await dataSocket!.addStream(file.openRead());
       }
+
+      transferInProgress = false;
+      await _closeDataSocket();
+      sendResponse('226 Transfer complete');
     } catch (e) {
       logger.generalLog('Exception in retrieveFile: $e');
       sendResponse('550 File transfer failed');

@@ -97,6 +97,7 @@ class FtpServer {
 
   FtpSession _createSession(Socket socket) {
     final bool implicitMode = securityMode == FtpSecurityMode.implicit;
+    socket.setOption(SocketOption.tcpNoDelay, true);
     late FtpSession session;
     session = FtpSession(
       socket,

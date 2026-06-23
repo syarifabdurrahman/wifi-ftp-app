@@ -112,6 +112,11 @@ class WebServerService {
       return;
     }
 
+    if (path == '/api/chunk') {
+      await _handleChunk(request);
+      return;
+    }
+
     // Default 404
     request.response.statusCode = HttpStatus.notFound;
     request.response.write("404 Not Found");
@@ -574,6 +579,63 @@ class WebServerService {
     } catch (e) {
       request.response.statusCode = HttpStatus.badRequest;
       request.response.write(jsonEncode({'error': 'Invalid request: $e'}));
+    }
+    await request.response.close();
+  }
+
+  Future<void> _handleChunk(HttpRequest request) async {
+    final relativePath = Uri.decodeComponent(request.uri.queryParameters['file'] ?? '');
+    final startStr = request.uri.queryParameters['start'] ?? '0';
+    final endStr = request.uri.queryParameters['end'];
+
+    if (relativePath.isEmpty) {
+      request.response.statusCode = HttpStatus.badRequest;
+      request.response.write('Missing file parameter');
+      await request.response.close();
+      return;
+    }
+
+    final safePath = _getSafePath(relativePath);
+    if (safePath == null) {
+      request.response.statusCode = HttpStatus.forbidden;
+      request.response.write('Access Denied');
+      await request.response.close();
+      return;
+    }
+
+    final file = File(safePath);
+    if (!await file.exists()) {
+      request.response.statusCode = HttpStatus.notFound;
+      request.response.write('File not found');
+      await request.response.close();
+      return;
+    }
+
+    try {
+      final fileLength = await file.length();
+      final start = int.tryParse(startStr) ?? 0;
+      final end = endStr != null ? int.tryParse(endStr) ?? (fileLength - 1) : (fileLength - 1);
+      final clampedEnd = end.clamp(0, fileLength - 1);
+      final clampedStart = start.clamp(0, clampedEnd);
+      final chunkSize = clampedEnd - clampedStart + 1;
+
+      final raf = file.openSync(mode: FileMode.read);
+      try {
+        await raf.setPosition(clampedStart);
+        final chunk = await raf.read(chunkSize);
+
+        request.response.statusCode = HttpStatus.partialContent;
+        request.response.bufferOutput = false;
+        request.response.headers.add('Content-Length', chunk.length.toString());
+        request.response.headers.add('Content-Range', 'bytes $clampedStart-$clampedEnd/$fileLength');
+        request.response.headers.contentType = ContentType.binary;
+        request.response.add(chunk);
+      } finally {
+        raf.closeSync();
+      }
+    } catch (e) {
+      request.response.statusCode = HttpStatus.internalServerError;
+      request.response.write('Chunk error: $e');
     }
     await request.response.close();
   }
@@ -1914,7 +1976,7 @@ class WebServerService {
                 updateDeleteButton();
                 loadFiles(currentDir);
                 if (data.failed > 0) {
-                    alert('Deleted ' + data.deleted + ', failed: ' + data.failed + '\n' + data.errors.join('\n'));
+                    alert('Deleted ' + data.deleted + ', failed: ' + data.failed + '\\n' + data.errors.join('\\n'));
                 }
             }).catch(() => {
                 alert('Failed to delete files');
@@ -2036,50 +2098,101 @@ class WebServerService {
             showToast('Downloading...', 'download');
             filenameText.innerText = fileName;
 
-            const xhr = new XMLHttpRequest();
-            activeXhrs.add(xhr);
-            xhr.responseType = 'blob';
-
-            xhr.open('GET', '/download?file=' + encodeURIComponent(filePath));
-
-            xhr.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const pct = Math.round((e.loaded / e.total) * 100);
-                    progressFill.style.width = pct + '%';
-                    percentText.innerText = pct + '%';
+            // 1. Get file size via 1-byte probe
+            let fileSize;
+            try {
+                const headRes = await fetch('/api/chunk?file=' + encodeURIComponent(filePath) + '&start=0&end=0');
+                const cr = headRes.headers.get('Content-Range');
+                if (cr) {
+                    const match = cr.match(/bytes \\d+-\\d+\\/(\\d+)/);
+                    if (match) fileSize = parseInt(match[1], 10);
                 }
-            };
+            } catch (_) {}
+            if (!fileSize) {
+                filenameText.innerText = 'Failed to get file size';
+                hideToast(3000);
+                return;
+            }
 
-            xhr.onload = () => {
-                activeXhrs.delete(xhr);
-                if (xhr.status === 200) {
-                    const blob = xhr.response;
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                }
+            // 2. Split into chunks
+            const CHUNKS = 4;
+            const chunkSize = Math.ceil(fileSize / CHUNKS);
+            const ranges = [];
+            for (let i = 0; i < CHUNKS; i++) {
+                const start = i * chunkSize;
+                const end = Math.min(start + chunkSize - 1, fileSize - 1);
+                if (start >= fileSize) break;
+                ranges.push({ start, end });
+            }
+
+            // 3. Download all chunks in parallel
+            let totalLoaded = 0;
+            const blobs = new Array(ranges.length);
+            const xhrs = [];
+
+            function updateDownloadProgress() {
+                const pct = Math.round((totalLoaded / fileSize) * 100);
+                progressFill.style.width = pct + '%';
+                percentText.innerText = pct + '%';
+            }
+
+            const promises = ranges.map((r, idx) => {
+                return new Promise((resolve) => {
+                    const xhr = new XMLHttpRequest();
+                    activeXhrs.add(xhr);
+                    xhrs.push(xhr);
+                    xhr.responseType = 'blob';
+                    xhr.open('GET', '/api/chunk?file=' + encodeURIComponent(filePath) + '&start=' + r.start + '&end=' + r.end);
+
+                    xhr.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            const prev = xhr._lastLoaded || 0;
+                            totalLoaded += e.loaded - prev;
+                            xhr._lastLoaded = e.loaded;
+                            updateDownloadProgress();
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        activeXhrs.delete(xhr);
+                        if (xhr.status === 206 && xhr.response) {
+                            blobs[idx] = xhr.response;
+                        }
+                        resolve();
+                    };
+
+                    xhr.onerror = () => {
+                        activeXhrs.delete(xhr);
+                        resolve();
+                    };
+
+                    xhr.onabort = () => {
+                        activeXhrs.delete(xhr);
+                    };
+
+                    xhr.send();
+                });
+            });
+
+            await Promise.all(promises);
+
+            // 4. Reassemble
+            const validBlobs = blobs.filter(b => b);
+            if (validBlobs.length === ranges.length) {
+                const merged = new Blob(blobs);
+                const url = URL.createObjectURL(merged);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
                 filenameText.innerText = 'Download Complete';
-                hideToast(2000);
-            };
-
-            xhr.onerror = () => {
-                activeXhrs.delete(xhr);
-                filenameText.innerText = 'Download Failed';
-                hideToast(2000);
-            };
-
-            xhr.onabort = () => {
-                activeXhrs.delete(xhr);
-                filenameText.innerText = 'Download Cancelled';
-                hideToast(1000);
-            };
-
-            xhr.send();
+            } else {
+                filenameText.innerText = 'Download Failed (' + validBlobs.length + '/' + ranges.length + ' chunks)';
+            }
+            hideToast(2000);
         }
 
         // New Folder Dialog
